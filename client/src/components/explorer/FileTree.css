@@ -1,0 +1,82 @@
+.file-tree {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #f8f9fa;
+}
+
+.tree-header {
+  padding: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+  background: white;
+}
+
+.tree-header h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.tree-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem 0;
+}
+
+.tree-node {
+  user-select: none;
+}
+
+.node-content {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: background 0.15s;
+  gap: 0.5rem;
+}
+
+.node-content:hover {
+  background: #e2e8f0;
+}
+
+.node-content.active {
+  background: #667eea;
+  color: white;
+}
+
+.node-icon {
+  display: flex;
+  align-items: center;
+  color: #718096;
+}
+
+.node-content.active .node-icon {
+  color: white;
+}
+
+.node-name {
+  flex: 1;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.node-size {
+  font-size: 0.75rem;
+  color: #a0aec0;
+}
+
+.node-content.active .node-size {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.tree-loading,
+.tree-empty {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: #718096;
+  font-size: 0.9rem;
+}

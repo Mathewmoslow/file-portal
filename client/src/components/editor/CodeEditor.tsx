@@ -1,0 +1,143 @@
+import { useEffect } from 'react';
+import Editor from '@monaco-editor/react';
+import { useFileStore } from '../../store/fileStore';
+import { Save, X } from 'lucide-react';
+import './CodeEditor.css';
+
+export const CodeEditor = () => {
+  const {
+    activeFile,
+    openFiles,
+    unsavedFiles,
+    updateFileContent,
+    saveFile,
+    closeFile
+  } = useFileStore();
+
+  const openFilesArray = Array.from(openFiles.entries());
+  const currentContent = activeFile ? openFiles.get(activeFile) : '';
+  const isUnsaved = activeFile ? unsavedFiles.has(activeFile) : false;
+
+  const handleEditorChange = (value: string | undefined) => {
+    if (activeFile && value !== undefined) {
+      updateFileContent(activeFile, value);
+    }
+  };
+
+  const handleSave = async () => {
+    if (activeFile && currentContent !== undefined) {
+      await saveFile(activeFile, currentContent);
+    }
+  };
+
+  const getLanguage = (filename: string) => {
+    const ext = filename.split('.').pop()?.toLowerCase();
+    const languageMap: Record<string, string> = {
+      'js': 'javascript',
+      'jsx': 'javascript',
+      'ts': 'typescript',
+      'tsx': 'typescript',
+      'html': 'html',
+      'css': 'css',
+      'json': 'json',
+      'md': 'markdown',
+      'py': 'python',
+      'sql': 'sql',
+      'xml': 'xml',
+      'yaml': 'yaml',
+      'yml': 'yaml',
+    };
+    return languageMap[ext || ''] || 'plaintext';
+  };
+
+  // Keyboard shortcut for save
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+        e.preventDefault();
+        handleSave();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeFile, currentContent]);
+
+  if (openFilesArray.length === 0) {
+    return (
+      <div className="editor-empty">
+        <div className="empty-state">
+          <h2>📝 No File Open</h2>
+          <p>Select a file from the file tree to start editing</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="code-editor">
+      <div className="editor-tabs">
+        {openFilesArray.map(([path]) => {
+          const fileName = path.split('/').pop() || path;
+          const isActive = path === activeFile;
+          const hasUnsaved = unsavedFiles.has(path);
+
+          return (
+            <div
+              key={path}
+              className={`editor-tab ${isActive ? 'active' : ''}`}
+              onClick={() => useFileStore.setState({ activeFile: path })}
+            >
+              <span className="tab-name">
+                {fileName}
+                {hasUnsaved && <span className="unsaved-indicator">●</span>}
+              </span>
+              <button
+                className="tab-close"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  closeFile(path);
+                }}
+              >
+                <X size={14} />
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="editor-toolbar">
+        <button
+          className="toolbar-btn"
+          onClick={handleSave}
+          disabled={!isUnsaved}
+          title="Save (Ctrl+S)"
+        >
+          <Save size={16} />
+          <span>Save</span>
+        </button>
+        {isUnsaved && <span className="toolbar-status">Unsaved changes</span>}
+      </div>
+
+      <div className="editor-container">
+        {activeFile && (
+          <Editor
+            height="100%"
+            language={getLanguage(activeFile)}
+            value={currentContent}
+            onChange={handleEditorChange}
+            theme="vs-dark"
+            options={{
+              minimap: { enabled: false },
+              fontSize: 14,
+              tabSize: 2,
+              scrollBeyondLastLine: false,
+              automaticLayout: true,
+              wordWrap: 'on',
+            }}
+          />
+        )}
+      </div>
+    </div>
+  );
+};
