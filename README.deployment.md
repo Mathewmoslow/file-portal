@@ -35,9 +35,10 @@
 
 3. **Configure Build Settings**:
    - **Framework Preset**: Vite
-   - **Root Directory**: `./client`
+   - **Root Directory**: `client`
    - **Build Command**: `npm run build`
    - **Output Directory**: `dist`
+   - **Install Command**: `npm install`
 
 4. **Add Environment Variables**:
    Click "Environment Variables" and add:
