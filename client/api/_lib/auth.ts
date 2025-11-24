@@ -1,5 +1,5 @@
 import type { VercelRequest } from '@vercel/node';
-import { CryptoService } from '../../server/src/utils/crypto';
+import { CryptoService } from '../../../server/src/utils/crypto';
 
 export function authenticateRequest(req: VercelRequest): { authenticated: boolean; error?: any } {
   const authHeader = req.headers.authorization;
