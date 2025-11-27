@@ -37,8 +37,13 @@ class ApiService {
       }
     );
 
-    // Load token from localStorage
-    this.token = localStorage.getItem('token');
+    // Clear old persisted token and load session token
+    try {
+      localStorage.removeItem('token');
+    } catch {
+      // ignore
+    }
+    this.token = sessionStorage.getItem('token');
   }
 
   // Authentication
@@ -47,7 +52,7 @@ class ApiService {
       const response = await this.client.post<AuthResponse>('/auth/login', { password });
       if (response.data.success && response.data.token) {
         this.token = response.data.token;
-        localStorage.setItem('token', this.token);
+        sessionStorage.setItem('token', this.token);
       }
       return response.data;
     } catch (error: any) {
@@ -64,7 +69,7 @@ class ApiService {
   async logout(): Promise<void> {
     await this.client.post('/auth/logout');
     this.token = null;
-    localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
   }
 
   // File operations

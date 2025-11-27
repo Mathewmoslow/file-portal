@@ -57,7 +57,7 @@ export const AuthGate = ({ onLogin }: AuthGateProps) => {
           </button>
         </form>
 
-        <p className="auth-hint">Default password: demo123</p>
+        <p className="auth-hint">Enter your password to continue.</p>
       </div>
     </div>
   );
