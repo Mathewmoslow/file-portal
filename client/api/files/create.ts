@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import fs from 'fs/promises';
 import path from 'path';
 import { setCorsHeaders, handleOptions } from '../_lib/cors.js';
 import { authenticateRequest } from '../_lib/auth.js';
+import { existsPath, writeFile } from '../_lib/sftp.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res);
@@ -30,39 +30,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    const basePath = process.env.FILE_BASE_PATH || '/tmp/files';
-    const fullPath = path.resolve(basePath, requestedPath.replace(/^\//, ''));
+    // Check if file already exists
+    const fileExists = await existsPath(requestedPath);
+    if (fileExists) {
+      return res.status(409).json({
+        success: false,
+        error: { code: 'FILE_EXISTS', message: 'File already exists' },
+      });
+    }
 
-    // Security check
-    if (!fullPath.startsWith(basePath)) {
+    await writeFile(requestedPath, content);
+
+    return res.status(201).json({
+      success: true,
+      message: 'File created successfully',
+      file: { path: requestedPath, name: path.basename(requestedPath) },
+    });
+  } catch (error: any) {
+    if (error.message === 'INVALID_PATH') {
       return res.status(403).json({
         success: false,
         error: { code: 'INVALID_PATH', message: 'Invalid path' },
       });
     }
-
-    // Ensure parent directory exists
-    await fs.mkdir(path.dirname(fullPath), { recursive: true });
-
-    // Check if file already exists
-    try {
-      await fs.access(fullPath);
-      return res.status(409).json({
-        success: false,
-        error: { code: 'FILE_EXISTS', message: 'File already exists' },
-      });
-    } catch {
-      // File doesn't exist, continue
-    }
-
-    await fs.writeFile(fullPath, content, 'utf-8');
-
-    return res.status(201).json({
-      success: true,
-      message: 'File created successfully',
-      file: { path: requestedPath, name: path.basename(fullPath) },
-    });
-  } catch (error: any) {
     return res.status(500).json({
       success: false,
       error: { code: 'SERVER_ERROR', message: error.message },

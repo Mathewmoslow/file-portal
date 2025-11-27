@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import fs from 'fs/promises';
 import path from 'path';
 import { setCorsHeaders, handleOptions } from '../_lib/cors.js';
 import { authenticateRequest } from '../_lib/auth.js';
+import { existsPath, writeFile } from '../_lib/sftp.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res);
@@ -30,35 +30,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    const basePath = process.env.FILE_BASE_PATH || '/tmp/files';
-    const fullPath = path.resolve(basePath, requestedPath.replace(/^\//, ''));
-
-    // Security check
-    if (!fullPath.startsWith(basePath)) {
-      return res.status(403).json({
+    const fileExists = await existsPath(requestedPath);
+    if (!fileExists) {
+      return res.status(404).json({
         success: false,
-        error: { code: 'INVALID_PATH', message: 'Invalid path' },
+        error: { code: 'FILE_NOT_FOUND', message: 'File not found' },
       });
     }
 
-    await fs.writeFile(fullPath, content, 'utf-8');
-    const stats = await fs.stat(fullPath);
+    await writeFile(requestedPath, content);
 
     return res.status(200).json({
       success: true,
       message: 'File updated successfully',
       file: {
         path: requestedPath,
-        name: path.basename(fullPath),
-        size: stats.size,
-        modified: stats.mtime.toISOString(),
+        name: path.basename(requestedPath),
+        size: Buffer.byteLength(content, 'utf-8'),
+        modified: new Date().toISOString(),
       },
     });
   } catch (error: any) {
-    if (error.code === 'ENOENT') {
-      return res.status(404).json({
+    if (error.message === 'INVALID_PATH') {
+      return res.status(403).json({
         success: false,
-        error: { code: 'FILE_NOT_FOUND', message: 'File not found' },
+        error: { code: 'INVALID_PATH', message: 'Invalid path' },
       });
     }
     return res.status(500).json({

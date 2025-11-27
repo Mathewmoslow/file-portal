@@ -1,9 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import fs from 'fs/promises';
-import path from 'path';
 import crypto from 'crypto';
+import path from 'path';
 import { setCorsHeaders, handleOptions } from '../_lib/cors.js';
 import { authenticateRequest } from '../_lib/auth.js';
+import { readFile } from '../_lib/sftp.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res);
@@ -22,38 +22,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const basePath = process.env.FILE_BASE_PATH || '/tmp/files';
     const requestedPath = (req.query.path as string) || '';
-    const fullPath = path.resolve(basePath, requestedPath.replace(/^\//, ''));
+    const content = await readFile(requestedPath);
 
-    // Security check
-    if (!fullPath.startsWith(basePath)) {
-      return res.status(403).json({
-        success: false,
-        error: { code: 'INVALID_PATH', message: 'Invalid path' },
-      });
-    }
-
-    const content = await fs.readFile(fullPath, 'utf-8');
-    const stats = await fs.stat(fullPath);
     const checksum = crypto.createHash('md5').update(content).digest('hex');
 
     return res.status(200).json({
       success: true,
       file: {
         path: requestedPath,
-        name: path.basename(fullPath),
+        name: path.basename(requestedPath),
         content,
-        size: stats.size,
-        modified: stats.mtime.toISOString(),
+        size: Buffer.byteLength(content, 'utf-8'),
+        modified: new Date().toISOString(),
         checksum,
       },
     });
   } catch (error: any) {
-    if (error.code === 'ENOENT') {
-      return res.status(404).json({
+    if (error.message === 'INVALID_PATH') {
+      return res.status(403).json({
         success: false,
-        error: { code: 'FILE_NOT_FOUND', message: 'File not found' },
+        error: { code: 'INVALID_PATH', message: 'Invalid path' },
       });
     }
     return res.status(500).json({

@@ -1,8 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import fs from 'fs/promises';
-import path from 'path';
 import { setCorsHeaders, handleOptions } from '../_lib/cors.js';
 import { authenticateRequest } from '../_lib/auth.js';
+import { listDirectory } from '../_lib/sftp.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res);
@@ -21,52 +20,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const basePath = process.env.FILE_BASE_PATH || '/tmp/files';
     const requestedPath = (req.query.path as string) || '/';
-    const fullPath = path.resolve(basePath, requestedPath.replace(/^\//, ''));
-
-    // Security check
-    if (!fullPath.startsWith(basePath)) {
-      return res.status(403).json({
-        success: false,
-        error: { code: 'INVALID_PATH', message: 'Invalid path' },
-      });
-    }
-
-    // Ensure base directory exists
-    await fs.mkdir(basePath, { recursive: true });
-
-    const items = await fs.readdir(fullPath, { withFileTypes: true });
-    const files = await Promise.all(
-      items.map(async (item) => {
-        const itemPath = path.join(fullPath, item.name);
-        const stats = await fs.stat(itemPath);
-        const relativePath = path.relative(basePath, itemPath);
-
-        return {
-          name: item.name,
-          type: item.isDirectory() ? 'directory' : 'file',
-          path: '/' + relativePath.replace(/\\/g, '/'),
-          size: stats.size,
-          modified: stats.mtime.toISOString(),
-        };
-      })
-    );
+    const files = await listDirectory(requestedPath);
 
     return res.status(200).json({
       success: true,
       path: requestedPath,
-      items: files.sort((a, b) => {
+      items: files.sort((a: any, b: any) => {
         if (a.type !== b.type) return a.type === 'directory' ? -1 : 1;
         return a.name.localeCompare(b.name);
       }),
       totalItems: files.length,
     });
   } catch (error: any) {
-    if (error.code === 'ENOENT') {
-      return res.status(404).json({
+    if (error.message === 'INVALID_PATH') {
+      return res.status(403).json({
         success: false,
-        error: { code: 'DIR_NOT_FOUND', message: 'Directory not found' },
+        error: { code: 'INVALID_PATH', message: 'Invalid path' },
       });
     }
     return res.status(500).json({
