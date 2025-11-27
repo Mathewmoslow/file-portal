@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import bcrypt from 'bcryptjs';
 import { CryptoService } from '../_lib/crypto.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -22,6 +23,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const { password } = req.body;
     const STORED_PASSWORD = process.env.PASSWORD || 'demo123';
+    const STORED_HASH = process.env.PASSWORD_HASH;
 
     if (!password) {
       return res.status(400).json({
@@ -33,7 +35,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    if (password !== STORED_PASSWORD) {
+    const isMatch = STORED_HASH
+      ? await bcrypt.compare(password, STORED_HASH)
+      : password === STORED_PASSWORD;
+
+    if (!isMatch) {
       return res.status(401).json({
         success: false,
         error: {
