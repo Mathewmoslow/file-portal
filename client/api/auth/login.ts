@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { CryptoService } from '../_lib/crypto';
+import { CryptoService } from '../_lib/crypto.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Set CORS headers

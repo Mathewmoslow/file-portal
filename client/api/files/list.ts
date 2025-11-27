@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import fs from 'fs/promises';
 import path from 'path';
-import { setCorsHeaders, handleOptions } from '../_lib/cors';
-import { authenticateRequest } from '../_lib/auth';
+import { setCorsHeaders, handleOptions } from '../_lib/cors.js';
+import { authenticateRequest } from '../_lib/auth.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res);
