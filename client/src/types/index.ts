@@ -24,6 +24,9 @@ export interface FileResponse {
     path: string;
     name: string;
     content: string;
+    encoding: 'utf-8' | 'base64';
+    isBinary: boolean;
+    mimeType?: string;
     size: number;
     modified: string;
     checksum: string;
@@ -33,6 +36,8 @@ export interface FileResponse {
     message: string;
   };
 }
+
+export type FileData = NonNullable<FileResponse['file']>;
 
 export interface FileListResponse {
   success: boolean;

@@ -1,5 +1,5 @@
 import axios, { type AxiosInstance } from 'axios';
-import type { AuthResponse, FileListResponse, FileResponse, FileNode } from '../types';
+import type { AuthResponse, FileListResponse, FileResponse, FileNode, FileData } from '../types';
 
 class ApiService {
   private client: AxiosInstance;
@@ -75,11 +75,14 @@ class ApiService {
     return response.data.items || [];
   }
 
-  async readFile(path: string): Promise<string> {
+  async readFile(path: string): Promise<FileData> {
     const response = await this.client.get<FileResponse>('/files/read', {
       params: { path },
     });
-    return response.data.file?.content || '';
+    if (!response.data.file) {
+      throw new Error(response.data.error?.message || 'Unable to read file');
+    }
+    return response.data.file;
   }
 
   async createFile(path: string, content = ''): Promise<void> {
@@ -98,6 +101,10 @@ class ApiService {
 
   async createDirectory(path: string): Promise<void> {
     await this.client.post('/files/dir/create', { path });
+  }
+
+  async uploadBase64(path: string, base64: string): Promise<void> {
+    await this.client.post('/files/upload', { path, contentBase64: base64 });
   }
 
   isAuthenticated(): boolean {

@@ -5,6 +5,7 @@ import { Save, X } from 'lucide-react';
 import './CodeEditor.css';
 
 export const CodeEditor = () => {
+  const previewBase = import.meta.env.VITE_PREVIEW_BASE_URL || 'https://files.mathewmoslow.com';
   const {
     activeFile,
     openFiles,
@@ -15,7 +16,8 @@ export const CodeEditor = () => {
   } = useFileStore();
 
   const openFilesArray = Array.from(openFiles.entries());
-  const currentContent = activeFile ? openFiles.get(activeFile) : '';
+  const currentFile = activeFile ? openFiles.get(activeFile) : undefined;
+  const currentContent = currentFile?.content ?? '';
   const isUnsaved = activeFile ? unsavedFiles.has(activeFile) : false;
 
   const handleEditorChange = (value: string | undefined) => {
@@ -74,6 +76,44 @@ export const CodeEditor = () => {
     );
   }
 
+  const renderBinaryPreview = () => {
+    if (!currentFile) return null;
+    const mime = currentFile.mimeType || 'application/octet-stream';
+    const url =
+      currentFile.encoding === 'base64'
+        ? `data:${mime};base64,${currentFile.content}`
+        : `${previewBase}${currentFile.path}`;
+    const isImage = mime.startsWith('image/');
+    const isPdf = mime === 'application/pdf';
+
+    return (
+      <div className="binary-preview">
+        <div className="binary-toolbar">
+          <span>Preview only (binary file)</span>
+          <a
+            className="toolbar-btn"
+            href={url || `https://files.mathewmoslow.com${currentFile.path}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Open in new tab
+          </a>
+        </div>
+        <div className="binary-content">
+          {isImage && url && <img src={url} alt={currentFile.name} style={{ maxWidth: '100%' }} />}
+          {isPdf && url && (
+            <iframe title={currentFile.name} src={url} style={{ width: '100%', height: '100%' }} />
+          )}
+          {!isImage && !isPdf && (
+            <div className="binary-fallback">
+              <p>This file is binary. Use the button above to view or download.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="code-editor">
       <div className="editor-tabs">
@@ -107,20 +147,27 @@ export const CodeEditor = () => {
       </div>
 
       <div className="editor-toolbar">
-        <button
-          className="toolbar-btn"
-          onClick={handleSave}
-          disabled={!isUnsaved}
-          title="Save (Ctrl+S)"
-        >
-          <Save size={16} />
-          <span>Save</span>
-        </button>
-        {isUnsaved && <span className="toolbar-status">Unsaved changes</span>}
+        {!currentFile?.isBinary && (
+          <>
+            <button
+              className="toolbar-btn"
+              onClick={handleSave}
+              disabled={!isUnsaved}
+              title="Save (Ctrl+S)"
+            >
+              <Save size={16} />
+              <span>Save</span>
+            </button>
+            {isUnsaved && <span className="toolbar-status">Unsaved changes</span>}
+          </>
+        )}
+        {currentFile?.isBinary && (
+          <span className="toolbar-status">Binary file (preview only)</span>
+        )}
       </div>
 
       <div className="editor-container">
-        {activeFile && (
+        {activeFile && !currentFile?.isBinary && (
           <Editor
             height="100%"
             language={getLanguage(activeFile)}
@@ -137,6 +184,7 @@ export const CodeEditor = () => {
             }}
           />
         )}
+        {activeFile && currentFile?.isBinary && renderBinaryPreview()}
       </div>
     </div>
   );

@@ -1,11 +1,11 @@
 import { create } from 'zustand';
 import { api } from '../services/api';
-import type { FileNode } from '../types';
+import type { FileNode, FileData } from '../types';
 
 interface FileStore {
   // State
   fileTree: FileNode[];
-  openFiles: Map<string, string>;
+  openFiles: Map<string, FileData>;
   activeFile: string | null;
   unsavedFiles: Set<string>;
   isLoading: boolean;
@@ -19,6 +19,7 @@ interface FileStore {
   setActiveFile: (path: string | null) => void;
   updateFileContent: (path: string, content: string) => void;
   createFile: (path: string, content?: string) => Promise<void>;
+  uploadFile: (path: string, base64: string) => Promise<void>;
   deleteFile: (path: string) => Promise<void>;
   createDirectory: (path: string) => Promise<void>;
 }
@@ -52,9 +53,9 @@ export const useFileStore = create<FileStore>((set, get) => ({
 
     set({ isLoading: true, error: null });
     try {
-      const content = await api.readFile(path);
+      const file = await api.readFile(path);
       const newOpenFiles = new Map(openFiles);
-      newOpenFiles.set(path, content);
+      newOpenFiles.set(path, file);
       set({
         openFiles: newOpenFiles,
         activeFile: path,
@@ -85,6 +86,11 @@ export const useFileStore = create<FileStore>((set, get) => ({
   },
 
   saveFile: async (path: string, content: string) => {
+    const current = get().openFiles.get(path);
+    if (current?.isBinary) {
+      set({ error: 'Binary files are not editable here.' });
+      return;
+    }
     set({ isLoading: true, error: null });
     try {
       await api.updateFile(path, content);
@@ -102,9 +108,13 @@ export const useFileStore = create<FileStore>((set, get) => ({
   },
 
   updateFileContent: (path: string, content: string) => {
+    const current = get().openFiles.get(path);
+    if (current?.isBinary) return;
     const { openFiles, unsavedFiles } = get();
     const newOpenFiles = new Map(openFiles);
-    newOpenFiles.set(path, content);
+    if (current) {
+      newOpenFiles.set(path, { ...current, content });
+    }
 
     const newUnsavedFiles = new Set(unsavedFiles);
     newUnsavedFiles.add(path);
@@ -119,6 +129,17 @@ export const useFileStore = create<FileStore>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       await api.createFile(path, content);
+      await get().loadFileTree();
+      set({ isLoading: false });
+    } catch (error: any) {
+      set({ error: error.message, isLoading: false });
+    }
+  },
+
+  uploadFile: async (path: string, base64: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      await api.uploadBase64(path, base64);
       await get().loadFileTree();
       set({ isLoading: false });
     } catch (error: any) {

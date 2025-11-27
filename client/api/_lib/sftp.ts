@@ -110,3 +110,20 @@ export async function removePath(requestedPath: string, recursive = false) {
     }
   });
 }
+
+export async function readFileBuffer(requestedPath: string) {
+  return withClient(async (client) => {
+    const { remotePath } = toRemotePath(requestedPath);
+    const data = await client.get(remotePath);
+    return Buffer.isBuffer(data) ? data : Buffer.from(data as Buffer);
+  });
+}
+
+export async function writeFileBuffer(requestedPath: string, content: Buffer) {
+  return withClient(async (client) => {
+    const { remotePath } = toRemotePath(requestedPath);
+    const dirPath = path.posix.dirname(remotePath);
+    await client.mkdir(dirPath, true);
+    await client.put(content, remotePath);
+  });
+}

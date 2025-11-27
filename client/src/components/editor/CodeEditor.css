@@ -132,3 +132,33 @@
   flex: 1;
   overflow: hidden;
 }
+
+.binary-preview {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  color: #e5e7eb;
+}
+
+.binary-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: #252526;
+  border-bottom: 1px solid #3e3e42;
+}
+
+.binary-content {
+  flex: 1;
+  padding: 1rem;
+  overflow: auto;
+  background: #1e1e1e;
+}
+
+.binary-fallback {
+  padding: 1rem;
+  background: #111827;
+  border: 1px solid #374151;
+  border-radius: 6px;
+}

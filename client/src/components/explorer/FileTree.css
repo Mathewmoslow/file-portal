@@ -9,6 +9,10 @@
   padding: 1rem;
   border-bottom: 1px solid #e2e8f0;
   background: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
 }
 
 .tree-header h3 {
@@ -16,6 +20,25 @@
   font-size: 0.95rem;
   font-weight: 600;
   color: #2d3748;
+}
+
+.tree-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.tree-actions button {
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.tree-actions button:hover {
+  background: #5a67d8;
 }
 
 .tree-content {
@@ -79,4 +102,14 @@
   text-align: center;
   color: #718096;
   font-size: 0.9rem;
+}
+
+.drop-zone {
+  margin: 0.75rem 1rem 1rem;
+  padding: 0.75rem;
+  border: 2px dashed #cbd5e0;
+  border-radius: 8px;
+  text-align: center;
+  color: #718096;
+  font-size: 0.85rem;
 }

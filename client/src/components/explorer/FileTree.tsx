@@ -1,11 +1,12 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useFileStore } from '../../store/fileStore';
 import type { FileNode } from '../../types';
-import { File, Folder, FolderOpen } from 'lucide-react';
+import { File, Folder } from 'lucide-react';
 import './FileTree.css';
 
 export const FileTree = () => {
-  const { fileTree, loadFileTree, openFile, activeFile, isLoading } = useFileStore();
+  const { fileTree, loadFileTree, openFile, activeFile, isLoading, createFile, uploadFile } = useFileStore();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     loadFileTree();
@@ -69,6 +70,55 @@ export const FileTree = () => {
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
+
+  const handleNewFile = async () => {
+    const name = window.prompt('New file name (e.g., index.html):');
+    if (!name) return;
+    const path = name.startsWith('/') ? name : `/${name}`;
+    await createFile(path, '');
+    await loadFileTree();
+  };
+
+  const handleFileInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files?.length) return;
+    await uploadFiles(Array.from(files));
+    e.target.value = '';
+  };
+
+  const readFileAsBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        const base64 = result.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const uploadFiles = async (files: File[]) => {
+    for (const file of files) {
+      const base64 = await readFileAsBase64(file);
+      const targetPath = `/${file.name}`;
+      await uploadFile(targetPath, base64);
+    }
+    await loadFileTree();
+  };
+
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const files = Array.from(e.dataTransfer.files || []);
+    if (!files.length) return;
+    await uploadFiles(files);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+  };
+
   if (isLoading && fileTree.length === 0) {
     return (
       <div className="file-tree">
@@ -81,13 +131,27 @@ export const FileTree = () => {
     <div className="file-tree">
       <div className="tree-header">
         <h3>📁 Files</h3>
+        <div className="tree-actions">
+          <button onClick={handleNewFile}>New File</button>
+          <button onClick={() => fileInputRef.current?.click()}>Upload</button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            style={{ display: 'none' }}
+            onChange={handleFileInputChange}
+          />
+        </div>
       </div>
-      <div className="tree-content">
+      <div className="tree-content" onDrop={handleDrop} onDragOver={handleDragOver}>
         {fileTree.length === 0 ? (
           <div className="tree-empty">No files found</div>
         ) : (
           fileTree.map((node) => renderNode(node))
         )}
+        <div className="drop-zone">
+          Drag & drop files here to upload
+        </div>
       </div>
     </div>
   );
