@@ -47,6 +47,14 @@
   padding: 0.5rem 0;
 }
 
+.tree-path {
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  color: #4a5568;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f1f5f9;
+}
+
 .tree-node {
   user-select: none;
 }
@@ -94,6 +102,37 @@
 
 .node-content.active .node-size {
   color: rgba(255, 255, 255, 0.8);
+}
+
+.node-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: #edf2f7;
+  color: #4a5568;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.icon-btn:hover {
+  background: #e2e8f0;
+}
+
+.icon-btn.danger {
+  color: #c53030;
+  background: #fff5f5;
+}
+
+.icon-btn.danger:hover {
+  background: #fed7d7;
 }
 
 .tree-loading,

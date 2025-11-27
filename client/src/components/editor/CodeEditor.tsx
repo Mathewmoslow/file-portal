@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 import { useFileStore } from '../../store/fileStore';
-import { Save, X } from 'lucide-react';
+import { Save, X, ExternalLink } from 'lucide-react';
 import './CodeEditor.css';
 
 export const CodeEditor = () => {
@@ -30,6 +30,12 @@ export const CodeEditor = () => {
     if (activeFile && currentContent !== undefined) {
       await saveFile(activeFile, currentContent);
     }
+  };
+
+  const handlePreview = () => {
+    if (!activeFile) return;
+    const url = `${previewBase}${activeFile}`;
+    window.open(url, '_blank');
   };
 
   const getLanguage = (filename: string) => {
@@ -163,6 +169,12 @@ export const CodeEditor = () => {
         )}
         {currentFile?.isBinary && (
           <span className="toolbar-status">Binary file (preview only)</span>
+        )}
+        {activeFile && (
+          <button className="toolbar-btn secondary" onClick={handlePreview} title="Open preview">
+            <ExternalLink size={16} />
+            <span>Preview</span>
+          </button>
         )}
       </div>
 

@@ -107,6 +107,10 @@ class ApiService {
     await this.client.post('/files/upload', { path, contentBase64: base64 });
   }
 
+  async renamePath(from: string, to: string): Promise<void> {
+    await this.client.post('/files/rename', { from, to });
+  }
+
   isAuthenticated(): boolean {
     return this.token !== null;
   }

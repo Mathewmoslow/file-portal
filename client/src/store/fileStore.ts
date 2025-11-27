@@ -5,6 +5,7 @@ import type { FileNode, FileData } from '../types';
 interface FileStore {
   // State
   fileTree: FileNode[];
+  currentPath: string;
   openFiles: Map<string, FileData>;
   activeFile: string | null;
   unsavedFiles: Set<string>;
@@ -13,6 +14,7 @@ interface FileStore {
 
   // Actions
   loadFileTree: (path?: string) => Promise<void>;
+  navigateTo: (path: string) => Promise<void>;
   openFile: (path: string) => Promise<void>;
   closeFile: (path: string) => void;
   saveFile: (path: string, content: string) => Promise<void>;
@@ -20,12 +22,14 @@ interface FileStore {
   updateFileContent: (path: string, content: string) => void;
   createFile: (path: string, content?: string) => Promise<void>;
   uploadFile: (path: string, base64: string) => Promise<void>;
-  deleteFile: (path: string) => Promise<void>;
+  deleteFile: (path: string, recursive?: boolean) => Promise<void>;
   createDirectory: (path: string) => Promise<void>;
+  renamePath: (from: string, to: string) => Promise<void>;
 }
 
 export const useFileStore = create<FileStore>((set, get) => ({
   fileTree: [],
+  currentPath: '/',
   openFiles: new Map(),
   activeFile: null,
   unsavedFiles: new Set(),
@@ -36,10 +40,14 @@ export const useFileStore = create<FileStore>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const items = await api.listFiles(path);
-      set({ fileTree: items, isLoading: false });
+      set({ fileTree: items, currentPath: path || '/', isLoading: false });
     } catch (error: any) {
       set({ error: error.message, isLoading: false });
     }
+  },
+
+  navigateTo: async (path: string) => {
+    await get().loadFileTree(path || '/');
   },
 
   openFile: async (path: string) => {
@@ -128,8 +136,10 @@ export const useFileStore = create<FileStore>((set, get) => ({
   createFile: async (path: string, content = '') => {
     set({ isLoading: true, error: null });
     try {
-      await api.createFile(path, content);
-      await get().loadFileTree();
+      const base = get().currentPath || '/';
+      const targetPath = normalizePath(base, path);
+      await api.createFile(targetPath, content);
+      await get().loadFileTree(base);
       set({ isLoading: false });
     } catch (error: any) {
       set({ error: error.message, isLoading: false });
@@ -139,18 +149,20 @@ export const useFileStore = create<FileStore>((set, get) => ({
   uploadFile: async (path: string, base64: string) => {
     set({ isLoading: true, error: null });
     try {
-      await api.uploadBase64(path, base64);
-      await get().loadFileTree();
+      const base = get().currentPath || '/';
+      const targetPath = normalizePath(base, path);
+      await api.uploadBase64(targetPath, base64);
+      await get().loadFileTree(base);
       set({ isLoading: false });
     } catch (error: any) {
       set({ error: error.message, isLoading: false });
     }
   },
 
-  deleteFile: async (path: string) => {
+  deleteFile: async (path: string, recursive = false) => {
     set({ isLoading: true, error: null });
     try {
-      await api.deleteFile(path);
+      await api.deleteFile(path, recursive);
       get().closeFile(path);
       await get().loadFileTree();
       set({ isLoading: false });
@@ -162,11 +174,30 @@ export const useFileStore = create<FileStore>((set, get) => ({
   createDirectory: async (path: string) => {
     set({ isLoading: true, error: null });
     try {
-      await api.createDirectory(path);
-      await get().loadFileTree();
+      const base = get().currentPath || '/';
+      const targetPath = normalizePath(base, path);
+      await api.createDirectory(targetPath);
+      await get().loadFileTree(base);
+      set({ isLoading: false });
+    } catch (error: any) {
+      set({ error: error.message, isLoading: false });
+    }
+  },
+
+  renamePath: async (from: string, to: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      await api.renamePath(from, to);
+      await get().loadFileTree(get().currentPath);
       set({ isLoading: false });
     } catch (error: any) {
       set({ error: error.message, isLoading: false });
     }
   },
 }));
+
+function normalizePath(base: string, name: string) {
+  const trimmedBase = base.endsWith('/') ? base.slice(0, -1) : base;
+  const cleanedName = name.startsWith('/') ? name : `/${name}`;
+  return (trimmedBase + cleanedName) || '/';
+}
