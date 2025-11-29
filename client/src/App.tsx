@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { AuthGate } from './components/auth/AuthGate';
 import { FileTree } from './components/explorer/FileTree';
 import { CodeEditor } from './components/editor/CodeEditor';
@@ -8,6 +8,9 @@ import './App.css';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(300);
+  const [isResizing, setIsResizing] = useState(false);
+  const appRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     // Check if already authenticated
@@ -23,20 +26,38 @@ function App() {
     setIsAuthenticated(false);
   };
 
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing || !appRef.current) return;
+      const rect = appRef.current.getBoundingClientRect();
+      const min = 220;
+      const max = Math.min(520, rect.width - 320);
+      const next = Math.min(max, Math.max(min, e.clientX - rect.left));
+      setSidebarWidth(next);
+    };
+    const handleMouseUp = () => setIsResizing(false);
+    if (isResizing) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+    }
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing]);
+
   if (!isAuthenticated) {
     return <AuthGate onLogin={handleLogin} />;
   }
 
   return (
-    <div className="app">
+    <div className="app" ref={appRef}>
       <header className="app-header">
         <div className="header-left">
-          <span className="eyebrow">Maison des Fichiers</span>
           <h1>File Atelier</h1>
-          <p className="subtitle">Curate, edit, and publish with Parisian precision.</p>
           <div className="meta-badges">
-            <span className="badge">IONOS SFTP</span>
-            <span className="badge soft">files.mathewmoslow.com</span>
+            <span className="badge">files.mathewmoslow.com</span>
+            <span className="badge soft">IONOS SFTP</span>
           </div>
         </div>
         <div className="header-right">
@@ -48,9 +69,13 @@ function App() {
       </header>
 
       <div className="app-body">
-        <aside className="sidebar">
+        <aside className="sidebar" style={{ width: sidebarWidth }}>
           <FileTree />
         </aside>
+        <div
+          className={`resizer ${isResizing ? 'dragging' : ''}`}
+          onMouseDown={() => setIsResizing(true)}
+        />
 
         <main className="main-content">
           <CodeEditor />

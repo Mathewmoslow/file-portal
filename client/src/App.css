@@ -2,8 +2,8 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
-  padding: 18px;
-  gap: 14px;
+  padding: 14px;
+  gap: 12px;
   background: transparent;
   color: var(--ink);
 }
@@ -11,63 +11,45 @@
 .app-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  padding: 20px 22px;
-  background: linear-gradient(135deg, rgba(12, 10, 9, 0.95), rgba(12, 10, 9, 0.82));
-  color: #f7f4ef;
+  align-items: center;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.72);
+  color: #0e0c0a;
   border-radius: var(--rounded);
   box-shadow: var(--shadow);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--stroke);
 }
 
 .header-left h1 {
   font-family: 'Playfair Display', serif;
-  font-size: 1.5rem;
+  font-size: 1.35rem;
   font-weight: 600;
-  letter-spacing: 0.5px;
-  color: #f7f4ef;
-}
-
-.eyebrow {
-  display: inline-block;
-  padding: 6px 10px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  border-radius: 999px;
-  font-size: 0.75rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: rgba(247, 244, 239, 0.8);
-  margin-bottom: 8px;
-}
-
-.header-left .subtitle {
-  margin-top: 6px;
-  font-size: 0.9rem;
-  color: rgba(247, 244, 239, 0.7);
+  letter-spacing: 0.3px;
+  color: #0e0c0a;
 }
 
 .meta-badges {
   display: flex;
   gap: 10px;
-  margin-top: 10px;
+  margin-top: 6px;
 }
 
 .badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 12px;
-  border-radius: 999px;
-  font-size: 0.85rem;
+  padding: 7px 10px;
+  border-radius: 8px;
+  font-size: 0.82rem;
   color: #0e0c0a;
-  background: #f5e9d9;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: #f2e7d8;
+  border: 1px solid var(--stroke);
 }
 
 .badge.soft {
-  background: rgba(255, 255, 255, 0.2);
-  color: #f7f4ef;
-  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(20, 82, 75, 0.08);
+  color: var(--accent);
+  border: 1px solid rgba(20, 82, 75, 0.2);
 }
 
 .header-right {
@@ -80,38 +62,57 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.55rem 1.1rem;
-  background: rgba(255, 255, 255, 0.08);
+  padding: 0.45rem 1rem;
+  background: #0e0c0a;
   color: #f7f4ef;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 999px;
-  font-size: 0.9rem;
+  border: 1px solid #0e0c0a;
+  border-radius: 8px;
+  font-size: 0.88rem;
   cursor: pointer;
-  transition: all 0.2s ease;
-  backdrop-filter: blur(6px);
+  transition: all 0.15s ease;
 }
 
 .logout-btn:hover {
-  background: rgba(255, 255, 255, 0.18);
-  transform: translateY(-1px);
+  background: #141210;
+  transform: translateY(-0.5px);
 }
 
 .app-body {
   display: flex;
   flex: 1;
-  gap: 14px;
+  gap: 10px;
   overflow: hidden;
 }
 
 .sidebar {
-  width: 310px;
   background: var(--panel);
   border: 1px solid var(--stroke);
   display: flex;
   flex-direction: column;
   border-radius: var(--rounded);
   box-shadow: var(--shadow);
-  backdrop-filter: blur(6px);
+  min-width: 220px;
+}
+
+.resizer {
+  width: 8px;
+  cursor: col-resize;
+  background: transparent;
+  position: relative;
+}
+
+.resizer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 3px;
+  width: 2px;
+  background: rgba(20, 18, 16, 0.08);
+}
+
+.resizer.dragging::before {
+  background: rgba(20, 18, 16, 0.25);
 }
 
 .main-content {
