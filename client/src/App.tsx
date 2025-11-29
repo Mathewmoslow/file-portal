@@ -31,7 +31,13 @@ function App() {
     <div className="app">
       <header className="app-header">
         <div className="header-left">
-          <h1>📁 File Portal</h1>
+          <span className="eyebrow">Maison des Fichiers</span>
+          <h1>File Atelier</h1>
+          <p className="subtitle">Curate, edit, and publish with Parisian precision.</p>
+          <div className="meta-badges">
+            <span className="badge">IONOS SFTP</span>
+            <span className="badge soft">files.mathewmoslow.com</span>
+          </div>
         </div>
         <div className="header-right">
           <button className="logout-btn" onClick={handleLogout} title="Logout">

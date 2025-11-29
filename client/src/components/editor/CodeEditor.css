@@ -2,7 +2,8 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: #1e1e1e;
+  background: #fdfbf7;
+  border-radius: var(--rounded);
 }
 
 .editor-empty {
@@ -10,12 +11,12 @@
   align-items: center;
   justify-content: center;
   height: 100%;
-  background: #1e1e1e;
+  background: #fdfbf7;
 }
 
 .empty-state {
   text-align: center;
-  color: #858585;
+  color: var(--muted);
 }
 
 .empty-state h2 {
@@ -31,8 +32,8 @@
 .editor-tabs {
   display: flex;
   gap: 2px;
-  background: #252526;
-  padding: 0 0.5rem;
+  background: #f6f0e6;
+  padding: 0 0.75rem;
   overflow-x: auto;
 }
 
@@ -40,24 +41,25 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  background: #2d2d30;
-  color: #858585;
+  padding: 0.55rem 1.1rem;
+  background: rgba(14, 12, 10, 0.05);
+  color: var(--muted);
   cursor: pointer;
   border-top: 2px solid transparent;
   transition: all 0.15s;
   white-space: nowrap;
+  border-radius: 12px 12px 0 0;
 }
 
 .editor-tab:hover {
-  background: #1e1e1e;
-  color: #cccccc;
+  background: rgba(14, 12, 10, 0.1);
+  color: var(--ink);
 }
 
 .editor-tab.active {
-  background: #1e1e1e;
-  color: white;
-  border-top-color: #007acc;
+  background: #fdfbf7;
+  color: #0e0c0a;
+  border-top-color: #0e0c0a;
 }
 
 .tab-name {
@@ -79,7 +81,7 @@
   justify-content: center;
   background: transparent;
   border: none;
-  color: #858585;
+  color: var(--muted);
   cursor: pointer;
   padding: 0.125rem;
   border-radius: 3px;
@@ -87,17 +89,17 @@
 }
 
 .tab-close:hover {
-  background: #3e3e42;
-  color: white;
+  background: rgba(14, 12, 10, 0.1);
+  color: #0e0c0a;
 }
 
 .editor-toolbar {
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 0.5rem 1rem;
-  background: #252526;
-  border-bottom: 1px solid #3e3e42;
+  padding: 0.75rem 1.25rem;
+  background: #f6f0e6;
+  border-bottom: 1px solid var(--stroke);
 }
 
 .toolbar-btn {
@@ -105,25 +107,26 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.4rem 0.875rem;
-  background: #0e639c;
-  color: white;
+  background: #0e0c0a;
+  color: #f7f4ef;
   border: none;
-  border-radius: 4px;
+  border-radius: 10px;
   font-size: 0.85rem;
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .toolbar-btn:hover:not(:disabled) {
-  background: #1177bb;
+  background: #1d1a17;
 }
 
 .toolbar-btn.secondary {
-  background: #3b82f6;
+  background: #f5e9d9;
+  color: #0e0c0a;
 }
 
 .toolbar-btn.secondary:hover {
-  background: #2563eb;
+  background: #f1dbc2;
 }
 
 .toolbar-btn:disabled {
@@ -133,7 +136,7 @@
 
 .toolbar-status {
   font-size: 0.85rem;
-  color: #f59e0b;
+  color: #d97706;
 }
 
 .editor-container {
@@ -145,28 +148,28 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  color: #e5e7eb;
+  color: var(--ink);
 }
 
 .binary-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.75rem 1rem;
-  background: #252526;
-  border-bottom: 1px solid #3e3e42;
+  padding: 0.75rem 1.25rem;
+  background: #f6f0e6;
+  border-bottom: 1px solid var(--stroke);
 }
 
 .binary-content {
   flex: 1;
-  padding: 1rem;
+  padding: 1rem 1.25rem;
   overflow: auto;
-  background: #1e1e1e;
+  background: #fdfbf7;
 }
 
 .binary-fallback {
   padding: 1rem;
-  background: #111827;
-  border: 1px solid #374151;
-  border-radius: 6px;
+  background: rgba(14, 12, 10, 0.04);
+  border: 1px solid var(--stroke);
+  border-radius: 10px;
 }

@@ -1,3 +1,17 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap');
+
+:root {
+  --bg: #f7f4ef;
+  --panel: rgba(255, 255, 255, 0.78);
+  --ink: #0e0c0a;
+  --muted: #5d5a57;
+  --stroke: #e2ded7;
+  --accent: #0f766e;
+  --accent-2: #c69c6d;
+  --shadow: 0 25px 60px rgba(0, 0, 0, 0.08);
+  --rounded: 14px;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -6,9 +20,9 @@
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: 'Manrope', 'Helvetica Neue', Arial, sans-serif;
+  background: radial-gradient(circle at 20% 20%, #ffffff, #f7f4ef 38%), radial-gradient(circle at 80% 0%, #f0ebe3, #f7f4ef 45%), radial-gradient(circle at 50% 80%, #f7f4ef, #eee7dc 40%);
+  color: var(--ink);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

@@ -185,7 +185,7 @@ export const CodeEditor = () => {
             language={getLanguage(activeFile)}
             value={currentContent}
             onChange={handleEditorChange}
-            theme="vs-dark"
+            theme="vs"
             options={{
               minimap: { enabled: false },
               fontSize: 14,
