@@ -187,31 +187,22 @@ export const FileTree = () => {
   return (
     <div className="file-tree">
       <div className="tree-header">
-        <h3>📁 Files</h3>
-        <div className="tree-actions">
-          <button onClick={() => navigateTo(parentPath())}>Up</button>
-          <button onClick={handleNewFile}>New File</button>
-          <button onClick={handleNewFolder}>New Folder</button>
-          <button onClick={() => fileInputRef.current?.click()}>Upload</button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            style={{ display: 'none' }}
-            onChange={handleFileInputChange}
-          />
-        </div>
+        <h3>Files</h3>
+        <span className="tree-path-inline">{currentPath || '/'}</span>
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          style={{ display: 'none' }}
+          onChange={handleFileInputChange}
+        />
       </div>
-      <div className="tree-path">Path: {currentPath || '/'}</div>
       <div className="tree-content" onDrop={handleDrop} onDragOver={handleDragOver}>
         {fileTree.length === 0 ? (
           <div className="tree-empty">No files found</div>
         ) : (
           fileTree.map((node) => renderNode(node))
         )}
-        <div className="drop-zone">
-          Drag & drop files here to upload
-        </div>
       </div>
     </div>
   );

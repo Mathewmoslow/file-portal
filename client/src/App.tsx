@@ -153,15 +153,6 @@ function App() {
           )}
         </main>
       </div>
-
-      <footer className="app-footer">
-        <div className="footer-left">
-          <span>File Portal MVP</span>
-        </div>
-        <div className="footer-right">
-          <span>Press Ctrl+S to save</span>
-        </div>
-      </footer>
     </div>
   );
 }
