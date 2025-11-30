@@ -13,6 +13,7 @@ function App() {
   const [sidebarWidth, setSidebarWidth] = useState(300);
   const [isResizing, setIsResizing] = useState(false);
   const [view, setView] = useState<'mindmap' | 'editor'>('mindmap');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const appRef = useRef<HTMLDivElement | null>(null);
   const { fileTree, currentPath, loadFileTree, openFile, createFile, createDirectory, uploadFile } = useFileStore();
   const uploadInputRef = useRef<HTMLInputElement | null>(null);
@@ -55,15 +56,44 @@ function App() {
     return <AuthGate onLogin={handleLogin} />;
   }
 
+  const handleUp = () => {
+    if (!currentPath || currentPath === '/') return;
+    const parts = currentPath.split('/').filter(Boolean);
+    parts.pop();
+    const parent = '/' + parts.join('/');
+    loadFileTree(parent || '/');
+  };
+
+  const handleUpload = (files: FileList | null) => {
+    if (!files?.length) return;
+    const first = files[0];
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const result = reader.result as string;
+      const base64 = result.split(',')[1];
+      await uploadFile(first.name, base64);
+    };
+    reader.readAsDataURL(first);
+  };
+
   return (
     <div className="app" ref={appRef}>
       <header className="app-header">
         <div className="header-left">
           <h1>File Atelier</h1>
-          <div className="meta-badges">
-            <span className="badge">files.mathewmoslow.com</span>
-            <span className="badge soft">IONOS SFTP</span>
-          </div>
+          <div className="header-meta">{currentPath || '/'}</div>
+        </div>
+        <div className="header-actions">
+          <button onClick={handleUp} className="text-btn">Up</button>
+          <button onClick={() => createFile('/untitled.txt', '')} className="text-btn">New File</button>
+          <button onClick={() => createDirectory('/new-folder')} className="text-btn">New Folder</button>
+          <button onClick={() => uploadInputRef.current?.click()} className="text-btn">Upload</button>
+          <input
+            type="file"
+            ref={uploadInputRef}
+            style={{ display: 'none' }}
+            onChange={(e) => handleUpload(e.target.files)}
+          />
         </div>
         <div className="header-right">
           <div className="view-switch">
@@ -80,6 +110,13 @@ function App() {
               Editor
             </button>
           </div>
+          <button
+            className="text-btn"
+            onClick={() => setSidebarCollapsed((v) => !v)}
+            title="Toggle navigator"
+          >
+            {sidebarCollapsed ? 'Show Nav' : 'Hide Nav'}
+          </button>
           <button className="logout-btn" onClick={handleLogout} title="Logout">
             <LogOut size={18} />
             <span>Logout</span>
@@ -88,13 +125,17 @@ function App() {
       </header>
 
       <div className="app-body">
-        <aside className="sidebar" style={{ width: sidebarWidth }}>
-          <FileTree />
-        </aside>
-        <div
-          className={`resizer ${isResizing ? 'dragging' : ''}`}
-          onMouseDown={() => setIsResizing(true)}
-        />
+        {!sidebarCollapsed && (
+          <>
+            <aside className="sidebar" style={{ width: sidebarWidth }}>
+              <FileTree />
+            </aside>
+            <div
+              className={`resizer ${isResizing ? 'dragging' : ''}`}
+              onMouseDown={() => setIsResizing(true)}
+            />
+          </>
+        )}
 
         <main className="main-content">
           {view === 'mindmap' ? (
