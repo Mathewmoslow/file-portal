@@ -64,16 +64,46 @@ function App() {
     loadFileTree(parent || '/');
   };
 
-  const handleUpload = (files: FileList | null) => {
+  const normalizePath = (base: string, relative: string) => {
+    const cleanBase = base === '/' ? '' : base.replace(/\/+$/, '');
+    const cleanRel = relative.replace(/^\/+/, '');
+    return `${cleanBase}/${cleanRel}`.replace(/\/+/g, '/');
+  };
+
+  const readFileAsBase64 = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        resolve(result.split(',')[1]);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+  const ensureDirsForPath = async (path: string) => {
+    const parts = path.split('/').filter(Boolean);
+    let acc = '';
+    for (let i = 0; i < parts.length - 1; i++) {
+      acc += `/${parts[i]}`;
+      const dirPath = acc || '/';
+      try {
+        await createDirectory(dirPath);
+      } catch {
+        // ignore if exists
+      }
+    }
+  };
+
+  const handleUpload = async (files: FileList | null) => {
     if (!files?.length) return;
-    const first = files[0];
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const result = reader.result as string;
-      const base64 = result.split(',')[1];
-      await uploadFile(first.name, base64);
-    };
-    reader.readAsDataURL(first);
+    for (const file of Array.from(files)) {
+      const rel = (file as any).webkitRelativePath || file.webkitRelativePath || file.name;
+      const targetPath = normalizePath(currentPath || '/', rel);
+      await ensureDirsForPath(targetPath);
+      const base64 = await readFileAsBase64(file);
+      await uploadFile(targetPath, base64);
+    }
   };
 
   return (
@@ -91,6 +121,11 @@ function App() {
           <input
             type="file"
             ref={uploadInputRef}
+            multiple
+            // @ts-expect-error webkitdirectory support for folder uploads
+            webkitdirectory="true"
+            // @ts-expect-error directory attribute for some browsers
+            directory="true"
             style={{ display: 'none' }}
             onChange={(e) => handleUpload(e.target.files)}
           />

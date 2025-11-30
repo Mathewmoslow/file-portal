@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useFileStore } from '../../store/fileStore';
 import type { FileNode } from '../../types';
 import { File, Folder, Trash2, Edit3, ExternalLink } from 'lucide-react';
@@ -20,6 +20,8 @@ export const FileTree = () => {
     renamePath,
   } = useFileStore();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const folderInputRef = useRef<HTMLInputElement | null>(null);
+  const [dropActive, setDropActive] = useState(false);
   const previewBase = import.meta.env.VITE_PREVIEW_BASE_URL || 'https://files.mathewmoslow.com';
 
   useEffect(() => {
@@ -100,6 +102,12 @@ export const FileTree = () => {
   };
 
 
+  const normalizePath = (base: string, relative: string) => {
+    const cleanBase = base === '/' ? '' : base.replace(/\/+$/, '');
+    const cleanRel = relative.replace(/^\/+/, '');
+    return `${cleanBase}/${cleanRel}`.replace(/\/+/g, '/');
+  };
+
   const handleNewFile = async () => {
     const name = window.prompt('New file name (e.g., index.html):');
     if (!name) return;
@@ -134,20 +142,96 @@ export const FileTree = () => {
 
   const uploadFiles = async (files: File[]) => {
     for (const file of files) {
+      const rel = (file as any).webkitRelativePath || file.webkitRelativePath || file.name;
+      const targetPath = normalizePath(currentPath || '/', rel);
+      const dirs = targetPath.split('/').filter(Boolean);
+      let acc = '';
+      for (let i = 0; i < dirs.length - 1; i++) {
+        acc += `/${dirs[i]}`;
+        try {
+          await createDirectory(acc || '/');
+        } catch {
+          // ignore
+        }
+      }
       const base64 = await readFileAsBase64(file);
-      await uploadFile(file.name, base64);
+      await uploadFile(targetPath, base64);
     }
   };
 
   const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    const files = Array.from(e.dataTransfer.files || []);
+    setDropActive(false);
+    const droppedFiles = await getFilesFromDataTransfer(e.dataTransfer);
+    const files = droppedFiles.length ? droppedFiles : Array.from(e.dataTransfer.files || []);
     if (!files.length) return;
     await uploadFiles(files);
   };
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
+  };
+
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setDropActive(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setDropActive(false);
+  };
+
+  const getFilesFromDataTransfer = async (dt: DataTransfer): Promise<File[]> => {
+    const items = dt.items;
+    if (!items) return [];
+    const entries = Array.from(items)
+      .map((item) => (item as any).webkitGetAsEntry?.() as FileSystemEntry | null)
+      .filter(Boolean) as FileSystemEntry[];
+
+    const filePromises: Promise<File[]>[] = entries.map((entry) => walkEntry(entry, ''));
+    const nested = await Promise.all(filePromises);
+    return nested.flat();
+  };
+
+  const walkEntry = (entry: FileSystemEntry, pathPrefix: string): Promise<File[]> => {
+    return new Promise((resolve, reject) => {
+      if (entry.isFile) {
+        const fileEntry = entry as FileSystemFileEntry;
+        fileEntry.file(
+          (file) => {
+            (file as any).webkitRelativePath = pathPrefix ? `${pathPrefix}/${file.name}` : file.name;
+            resolve([file]);
+          },
+          (err) => reject(err)
+        );
+      } else if (entry.isDirectory) {
+        const dirEntry = entry as FileSystemDirectoryEntry;
+        const reader = dirEntry.createReader();
+        const entries: FileSystemEntry[] = [];
+        const readEntries = () => {
+          reader.readEntries(
+            (batch) => {
+              if (!batch.length) {
+                const childPromises = entries.map((child) =>
+                  walkEntry(child, pathPrefix ? `${pathPrefix}/${dirEntry.name}` : dirEntry.name)
+                );
+                Promise.all(childPromises)
+                  .then((childFiles) => resolve(childFiles.flat()))
+                  .catch(reject);
+                return;
+              }
+              entries.push(...batch);
+              readEntries();
+            },
+            (err) => reject(err)
+          );
+        };
+        readEntries();
+      } else {
+        resolve([]);
+      }
+    });
   };
 
   if (isLoading && fileTree.length === 0) {
@@ -193,11 +277,32 @@ export const FileTree = () => {
           ref={fileInputRef}
           type="file"
           multiple
+          // @ts-expect-error webkitdirectory support for folder uploads
+          webkitdirectory="true"
+          // @ts-expect-error directory support
+          directory="true"
+          style={{ display: 'none' }}
+          onChange={handleFileInputChange}
+        />
+        <input
+          ref={folderInputRef}
+          type="file"
+          multiple
+          // @ts-expect-error webkitdirectory support
+          webkitdirectory="true"
+          // @ts-expect-error directory support
+          directory="true"
           style={{ display: 'none' }}
           onChange={handleFileInputChange}
         />
       </div>
-      <div className="tree-content" onDrop={handleDrop} onDragOver={handleDragOver}>
+      <div
+        className={`tree-content ${dropActive ? 'drop-active' : ''}`}
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+      >
         {fileTree.length === 0 ? (
           <div className="tree-empty">No files found</div>
         ) : (
