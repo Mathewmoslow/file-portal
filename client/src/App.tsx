@@ -2,15 +2,19 @@ import { useState, useEffect, useRef } from 'react';
 import { AuthGate } from './components/auth/AuthGate';
 import { FileTree } from './components/explorer/FileTree';
 import { CodeEditor } from './components/editor/CodeEditor';
+import { MindMapView } from './components/mindmap/MindMapView';
 import { api } from './services/api';
 import { LogOut } from 'lucide-react';
+import { useFileStore } from './store/fileStore';
 import './App.css';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(300);
   const [isResizing, setIsResizing] = useState(false);
+  const [view, setView] = useState<'mindmap' | 'editor'>('mindmap');
   const appRef = useRef<HTMLDivElement | null>(null);
+  const { fileTree, currentPath, loadFileTree, openFile } = useFileStore();
 
   useEffect(() => {
     // Check if already authenticated
@@ -61,6 +65,20 @@ function App() {
           </div>
         </div>
         <div className="header-right">
+          <div className="view-switch">
+            <button
+              className={`switch-btn ${view === 'mindmap' ? 'active' : ''}`}
+              onClick={() => setView('mindmap')}
+            >
+              Atlas
+            </button>
+            <button
+              className={`switch-btn ${view === 'editor' ? 'active' : ''}`}
+              onClick={() => setView('editor')}
+            >
+              Editor
+            </button>
+          </div>
           <button className="logout-btn" onClick={handleLogout} title="Logout">
             <LogOut size={18} />
             <span>Logout</span>
@@ -78,7 +96,19 @@ function App() {
         />
 
         <main className="main-content">
-          <CodeEditor />
+          {view === 'mindmap' ? (
+            <MindMapView
+              files={fileTree}
+              currentPath={currentPath || '/'}
+              onOpenFile={(path) => {
+                openFile(path);
+                setView('editor');
+              }}
+              onSelectPath={(path) => loadFileTree(path)}
+            />
+          ) : (
+            <CodeEditor />
+          )}
         </main>
       </div>
 

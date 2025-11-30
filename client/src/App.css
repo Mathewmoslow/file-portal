@@ -58,6 +58,28 @@
   align-items: center;
 }
 
+.view-switch {
+  display: inline-flex;
+  background: rgba(20, 18, 16, 0.06);
+  border: 1px solid var(--stroke);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.switch-btn {
+  border: none;
+  background: transparent;
+  padding: 0.4rem 0.9rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  color: var(--muted);
+}
+
+.switch-btn.active {
+  background: #0e0c0a;
+  color: #f7f4ef;
+}
+
 .logout-btn {
   display: flex;
   align-items: center;
