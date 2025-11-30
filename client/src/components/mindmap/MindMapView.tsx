@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect, useRef } from 'react';
 import './MindMapView.css';
 import type { FileNode } from '../../types';
+import { api } from '../../services/api';
 
 interface MindMapViewProps {
   files: FileNode[];
@@ -16,6 +17,8 @@ export const MindMapView = ({ files, currentPath, onOpenFile, onSelectPath }: Mi
   const [modalFile, setModalFile] = useState<FileNode | null>(null);
   const [search, setSearch] = useState('');
   const [showResults, setShowResults] = useState(false);
+  const [searchResults, setSearchResults] = useState<FileNode[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -63,6 +66,37 @@ export const MindMapView = ({ files, currentPath, onOpenFile, onSelectPath }: Mi
       .map((f) => ({ ...f, match: f.name }));
   }, [files, search]);
 
+  useEffect(() => {
+    const runSearch = async () => {
+      const term = search.trim().toLowerCase();
+      if (term.length < 2) {
+        setSearchResults([]);
+        setSearchLoading(false);
+        return;
+      }
+      setSearchLoading(true);
+      try {
+        const matches: FileNode[] = [];
+        const textFiles = files.filter((f) => f.type === 'file');
+        for (const f of textFiles) {
+          try {
+            const data = await api.readFile(f.path);
+            const content = data.isBinary ? '' : data.content.toLowerCase();
+            if (f.name.toLowerCase().includes(term) || content.includes(term)) {
+              matches.push(f);
+            }
+          } catch {
+            // ignore read errors
+          }
+        }
+        setSearchResults(matches);
+      } finally {
+        setSearchLoading(false);
+      }
+    };
+    runSearch();
+  }, [search, files]);
+
   const openFromModal = (path: string) => {
     onOpenFile(path);
     setModalFile(null);
@@ -98,27 +132,29 @@ export const MindMapView = ({ files, currentPath, onOpenFile, onSelectPath }: Mi
           />
           <span className="search-shortcut">⌘K</span>
           <div className={`search-results ${showResults ? 'active' : ''}`}>
-            {filtered.map((item) => (
-              <div
-                key={item.path}
-                className="search-result-item"
-                onClick={() => {
-                  setModalFile(item);
-                  setShowResults(false);
-                }}
-              >
-                <div className="result-icon">
-                  <svg viewBox="0 0 24 24" fill="none">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                  </svg>
+            {searchLoading && <div className="search-empty">Searching…</div>}
+            {!searchLoading &&
+              (searchResults.length > 0 ? searchResults : filtered).map((item) => (
+                <div
+                  key={item.path}
+                  className="search-result-item"
+                  onClick={() => {
+                    setShowResults(false);
+                    onOpenFile(item.path);
+                  }}
+                >
+                  <div className="result-icon">
+                    <svg viewBox="0 0 24 24" fill="none">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    </svg>
+                  </div>
+                  <div className="result-info">
+                    <div className="result-name">{item.name}</div>
+                    <div className="result-meta">{item.type}</div>
+                  </div>
                 </div>
-                <div className="result-info">
-                  <div className="result-name">{item.name}</div>
-                  <div className="result-meta">{item.type}</div>
-                </div>
-              </div>
-            ))}
-            {filtered.length === 0 && search && (
+              ))}
+            {!searchLoading && search && searchResults.length === 0 && filtered.length === 0 && (
               <div className="search-empty">No matches</div>
             )}
           </div>
@@ -144,7 +180,7 @@ export const MindMapView = ({ files, currentPath, onOpenFile, onSelectPath }: Mi
           ))}
         </svg>
 
-        <div className="mindmap-node root" style={{ left: '50%', top: '50%' }}>
+        <div className="mindmap-node root" style={{ left: '50%', top: '50%' }} onClick={() => onSelectPath('/')}>
           <div className="node-content">
             <div className="node-label">Root</div>
             <div className="node-count">{files.length} items</div>
@@ -173,7 +209,7 @@ export const MindMapView = ({ files, currentPath, onOpenFile, onSelectPath }: Mi
             key={node.path}
             className={`mindmap-node child ${modalFile?.path === node.path ? 'active' : ''}`}
             style={{ left: `${node.x}%`, top: `${node.y}%` }}
-            onClick={() => setModalFile(node)}
+            onClick={() => onOpenFile(node.path)}
           >
             <div className="node-content">
               <div className="node-label">{node.name}</div>

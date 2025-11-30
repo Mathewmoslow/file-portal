@@ -110,7 +110,7 @@ function App() {
     <div className="app" ref={appRef}>
       <header className="app-header">
         <div className="header-left">
-          <h1>File Atelier</h1>
+          <h1 onClick={() => loadFileTree('/')}>File Atelier</h1>
           <div className="header-meta">{currentPath || '/'}</div>
         </div>
         <div className="header-actions">
