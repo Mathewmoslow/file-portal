@@ -14,7 +14,8 @@ function App() {
   const [isResizing, setIsResizing] = useState(false);
   const [view, setView] = useState<'mindmap' | 'editor'>('mindmap');
   const appRef = useRef<HTMLDivElement | null>(null);
-  const { fileTree, currentPath, loadFileTree, openFile } = useFileStore();
+  const { fileTree, currentPath, loadFileTree, openFile, createFile, createDirectory, uploadFile } = useFileStore();
+  const uploadInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     // Check if already authenticated

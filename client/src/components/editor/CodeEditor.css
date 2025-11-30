@@ -3,7 +3,6 @@
   flex-direction: column;
   height: 100%;
   background: #fdfbf7;
-  border-radius: var(--rounded);
 }
 
 .editor-empty {
@@ -48,7 +47,6 @@
   border-top: 2px solid transparent;
   transition: all 0.15s;
   white-space: nowrap;
-  border-radius: 12px 12px 0 0;
 }
 
 .editor-tab:hover {
@@ -84,7 +82,6 @@
   color: var(--muted);
   cursor: pointer;
   padding: 0.125rem;
-  border-radius: 3px;
   transition: all 0.15s;
 }
 
@@ -110,7 +107,7 @@
   background: #0e0c0a;
   color: #f7f4ef;
   border: none;
-  border-radius: 10px;
+  border-radius: 4px;
   font-size: 0.85rem;
   cursor: pointer;
   transition: all 0.15s;
@@ -171,5 +168,5 @@
   padding: 1rem;
   background: rgba(14, 12, 10, 0.04);
   border: 1px solid var(--stroke);
-  border-radius: 10px;
+  border-radius: 4px;
 }
