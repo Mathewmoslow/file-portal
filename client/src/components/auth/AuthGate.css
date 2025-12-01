@@ -3,16 +3,16 @@
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(180deg, #f8f5ed 0%, #f3eee4 100%);
 }
 
 .auth-card {
-  background: white;
-  padding: 2.5rem;
-  border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  background: #ffffff;
+  padding: 2rem;
+  border-radius: 6px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.1);
   width: 100%;
-  max-width: 420px;
+  max-width: 380px;
   animation: slideUp 0.4s ease-out;
 }
 
@@ -30,13 +30,14 @@
 .auth-card h1 {
   margin-bottom: 0.5rem;
   text-align: center;
-  color: #1a202c;
-  font-size: 2rem;
+  color: #141210;
+  font-size: 1.6rem;
+  font-family: 'Playfair Display', serif;
 }
 
 .auth-subtitle {
   text-align: center;
-  color: #718096;
+  color: #5a5652;
   margin-bottom: 2rem;
   font-size: 0.95rem;
 }
@@ -50,34 +51,34 @@
 .auth-card input[type="password"] {
   width: 100%;
   padding: 0.875rem 1rem;
-  border: 2px solid #e2e8f0;
-  border-radius: 8px;
+  border: 1px solid #e1d9cc;
+  border-radius: 4px;
   font-size: 15px;
   transition: all 0.2s;
 }
 
 .auth-card input[type="password"]:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: #14524b;
+  box-shadow: 0 0 0 3px rgba(20, 82, 75, 0.12);
 }
 
 .auth-error {
   padding: 0.75rem;
-  background: #fed7d7;
-  color: #c53030;
-  border-radius: 6px;
+  background: #fbeaea;
+  color: #b91c1c;
+  border-radius: 4px;
   font-size: 0.9rem;
   text-align: center;
 }
 
 .btn-primary {
   width: 100%;
-  background: #667eea;
-  color: white;
+  background: #0e0c0a;
+  color: #f7f4ef;
   border: none;
   padding: 0.875rem 1.5rem;
-  border-radius: 8px;
+  border-radius: 4px;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
@@ -85,9 +86,9 @@
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: #5a67d8;
+  background: #141210;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .btn-primary:disabled {
@@ -97,7 +98,7 @@
 
 .auth-hint {
   text-align: center;
-  color: #a0aec0;
+  color: #77726c;
   font-size: 0.85rem;
   margin-top: 1rem;
 }
