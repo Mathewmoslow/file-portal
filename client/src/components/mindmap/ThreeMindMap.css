@@ -5,6 +5,149 @@
   background: linear-gradient(180deg, #f8f5ed 0%, #f3eee4 100%);
 }
 
+.three-topbar {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  z-index: 5;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.nav-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  color: #141210;
+  cursor: pointer;
+}
+
+.search-container {
+  position: relative;
+  width: 280px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 10px 16px 10px 38px;
+  font-family: 'Manrope', sans-serif;
+  font-size: 13px;
+  border: 1px solid #e1d9cc;
+  border-radius: 4px;
+  background: white;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.search-input:focus {
+  border-color: #14524b;
+  box-shadow: 0 0 0 3px rgba(20, 82, 75, 0.12);
+}
+
+.search-input::placeholder {
+  color: #5a5652;
+  opacity: 0.6;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  stroke: #5a5652;
+  stroke-width: 2;
+  opacity: 0.5;
+}
+
+.search-shortcut {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 10px;
+  font-weight: 600;
+  color: #5a5652;
+  opacity: 0.5;
+  padding: 2px 6px;
+  border: 1px solid #e1d9cc;
+  border-radius: 3px;
+}
+
+.search-results {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #e1d9cc;
+  border-radius: 0;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.12);
+  max-height: 260px;
+  overflow-y: auto;
+  display: none;
+  z-index: 10;
+}
+
+.search-results.active {
+  display: block;
+}
+
+.search-result-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.search-result-item:hover {
+  background: #f0ece2;
+}
+
+.result-icon {
+  width: 28px;
+  height: 28px;
+  background: #f3eee4;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.result-icon svg {
+  width: 14px;
+  height: 14px;
+  stroke: #5a5652;
+  stroke-width: 1.5;
+}
+
+.result-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.result-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.result-meta {
+  font-size: 11px;
+  color: #5a5652;
+}
+
+.search-empty {
+  padding: 12px 14px;
+  font-size: 12px;
+  color: #5a5652;
+}
+
 .three-label {
   background: rgba(255, 255, 255, 0.9);
   color: #141210;

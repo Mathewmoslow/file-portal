@@ -2,6 +2,7 @@ import { Suspense, useMemo, useState, useRef, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Html } from '@react-three/drei';
 import type { FileNode } from '../../types';
+import { api } from '../../services/api';
 import './ThreeMindMap.css';
 
 interface ThreeMindMapProps {
@@ -35,6 +36,11 @@ export const ThreeMindMap = ({
   const [hovered, setHovered] = useState<string | null>(null);
   const [focused, setFocused] = useState<string | null>(null);
   const focusRef = useRef<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [searchResults, setSearchResults] = useState<FileNode[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (!isWebGLAvailable()) {
@@ -42,6 +48,52 @@ export const ThreeMindMap = ({
       onFallback?.();
     }
   }, [onFallback]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        inputRef.current?.focus();
+        setShowResults(true);
+      }
+      if (e.key === 'Escape') {
+        setShowResults(false);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  useEffect(() => {
+    const runSearch = async () => {
+      const term = search.trim().toLowerCase();
+      if (term.length < 2) {
+        setSearchResults([]);
+        setSearchLoading(false);
+        return;
+      }
+      setSearchLoading(true);
+      try {
+        const matches: FileNode[] = [];
+        const textFiles = files.filter((f) => f.type === 'file');
+        for (const f of textFiles) {
+          try {
+            const data = await api.readFile(f.path);
+            const content = data.isBinary ? '' : data.content.toLowerCase();
+            if (f.name.toLowerCase().includes(term) || content.includes(term)) {
+              matches.push(f);
+            }
+          } catch {
+            // ignore read errors
+          }
+        }
+        setSearchResults(matches);
+      } finally {
+        setSearchLoading(false);
+      }
+    };
+    runSearch();
+  }, [search, files]);
 
   const layout = useMemo(() => {
     const dirs = files.filter((f) => f.type === 'directory');
@@ -71,6 +123,58 @@ export const ThreeMindMap = ({
 
   return (
     <div className="three-wrapper">
+      <div className="three-topbar">
+        <div className="nav-title" onClick={() => onSelectPath('/')}>
+          File Atelier · {currentPath || '/'}
+        </div>
+        <div className="search-container">
+          <svg className="search-icon" viewBox="0 0 24 24" fill="none">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input
+            ref={inputRef}
+            type="text"
+            className="search-input"
+            placeholder="Search files and content…"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setShowResults(e.target.value.length > 0);
+            }}
+            onFocus={() => setShowResults(search.length > 0)}
+            onBlur={() => setTimeout(() => setShowResults(false), 150)}
+          />
+          <span className="search-shortcut">⌘K</span>
+          <div className={`search-results ${showResults ? 'active' : ''}`}>
+            {searchLoading && <div className="search-empty">Searching…</div>}
+            {!searchLoading &&
+              (searchResults.length > 0 ? searchResults : []).map((item) => (
+                <div
+                  key={item.path}
+                  className="search-result-item"
+                  onClick={() => {
+                    setShowResults(false);
+                    onOpenFile(item.path);
+                  }}
+                >
+                  <div className="result-icon">
+                    <svg viewBox="0 0 24 24" fill="none">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    </svg>
+                  </div>
+                  <div className="result-info">
+                    <div className="result-name">{item.name}</div>
+                    <div className="result-meta">{item.type}</div>
+                  </div>
+                </div>
+              ))}
+            {!searchLoading && search && searchResults.length === 0 && (
+              <div className="search-empty">No matches</div>
+            )}
+          </div>
+        </div>
+      </div>
       <Canvas
         camera={{ position: [0, 8, 16], fov: 45 }}
         onCreated={({ gl }) => {
