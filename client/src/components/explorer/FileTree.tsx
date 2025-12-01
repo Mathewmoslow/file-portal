@@ -154,7 +154,7 @@ export const FileTree = () => {
   const handleFileInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files?.length) return;
-    await uploadFiles(Array.from(files));
+    await uploadFiles(Array.from(files).map((file) => ({ file, relPath: file.name })));
     e.target.value = '';
   };
 
@@ -171,9 +171,11 @@ export const FileTree = () => {
     });
   };
 
-  const uploadFiles = async (files: File[]) => {
-    for (const file of files) {
-      const rel = (file as any).webkitRelativePath || file.webkitRelativePath || file.name;
+  type UploadItem = { file: File; relPath?: string };
+
+  const uploadFiles = async (items: UploadItem[]) => {
+    for (const item of items) {
+      const rel = item.relPath || (item.file as any).webkitRelativePath || item.file.webkitRelativePath || item.file.name;
       const targetPath = normalizePath(currentPath || '/', rel);
       const dirs = targetPath.split('/').filter(Boolean);
       let acc = '';
@@ -185,7 +187,7 @@ export const FileTree = () => {
           // ignore
         }
       }
-      const base64 = await readFileAsBase64(file);
+      const base64 = await readFileAsBase64(item.file);
       await uploadFile(targetPath, base64);
     }
   };
@@ -207,8 +209,10 @@ export const FileTree = () => {
       setDropTarget(null);
       return;
     }
-    const droppedFiles = await getFilesFromDataTransfer(e.dataTransfer);
-    const files = droppedFiles.length ? droppedFiles : Array.from(e.dataTransfer.files || []);
+    const droppedItems = await getFilesFromDataTransfer(e.dataTransfer);
+    const files = droppedItems.length
+      ? droppedItems
+      : Array.from(e.dataTransfer.files || []).map((file) => ({ file, relPath: file.name }));
     if (!files.length) return;
     await uploadFiles(files);
   };
@@ -244,26 +248,25 @@ export const FileTree = () => {
     return child !== parent && child.startsWith(p);
   };
 
-  const getFilesFromDataTransfer = async (dt: DataTransfer): Promise<File[]> => {
+  const getFilesFromDataTransfer = async (dt: DataTransfer): Promise<UploadItem[]> => {
     const items = dt.items;
     if (!items) return [];
     const entries = Array.from(items)
       .map((item) => (item as any).webkitGetAsEntry?.() as FileSystemEntry | null)
       .filter(Boolean) as FileSystemEntry[];
 
-    const filePromises: Promise<File[]>[] = entries.map((entry) => walkEntry(entry, ''));
+    const filePromises: Promise<UploadItem[]>[] = entries.map((entry) => walkEntry(entry, ''));
     const nested = await Promise.all(filePromises);
     return nested.flat();
   };
 
-  const walkEntry = (entry: FileSystemEntry, pathPrefix: string): Promise<File[]> => {
+  const walkEntry = (entry: FileSystemEntry, pathPrefix: string): Promise<UploadItem[]> => {
     return new Promise((resolve, reject) => {
       if (entry.isFile) {
         const fileEntry = entry as FileSystemFileEntry;
         fileEntry.file(
           (file) => {
-            (file as any).webkitRelativePath = pathPrefix ? `${pathPrefix}/${file.name}` : file.name;
-            resolve([file]);
+            resolve([{ file, relPath: pathPrefix ? `${pathPrefix}/${file.name}` : file.name }]);
           },
           (err) => reject(err)
         );
