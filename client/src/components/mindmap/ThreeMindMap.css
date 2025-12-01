@@ -1,0 +1,29 @@
+.three-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(180deg, #f8f5ed 0%, #f3eee4 100%);
+}
+
+.three-label {
+  background: rgba(255, 255, 255, 0.9);
+  color: #141210;
+  border: 1px solid #e1d9cc;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.12);
+}
+
+.three-label .label-meta {
+  font-size: 10px;
+  color: #5a5652;
+}
+
+.three-label.root {
+  background: #0e0c0a;
+  color: #f7f4ef;
+  border-color: #0e0c0a;
+}

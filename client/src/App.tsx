@@ -3,6 +3,7 @@ import { AuthGate } from './components/auth/AuthGate';
 import { FileTree } from './components/explorer/FileTree';
 import { CodeEditor } from './components/editor/CodeEditor';
 import { MindMapView } from './components/mindmap/MindMapView';
+import { ThreeMindMap } from './components/mindmap/ThreeMindMap';
 import { api } from './services/api';
 import { LogOut } from 'lucide-react';
 import { useFileStore } from './store/fileStore';
@@ -12,7 +13,8 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(300);
   const [isResizing, setIsResizing] = useState(false);
-  const [view, setView] = useState<'mindmap' | 'editor'>('mindmap');
+  const [view, setView] = useState<'atlas' | 'editor'>('atlas');
+  const [supportsWebGL, setSupportsWebGL] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const appRef = useRef<HTMLDivElement | null>(null);
   const { fileTree, currentPath, loadFileTree, openFile, createFile, createDirectory, uploadFile } = useFileStore();
@@ -51,6 +53,13 @@ function App() {
       window.removeEventListener('mouseup', handleMouseUp);
     };
   }, [isResizing]);
+
+  useEffect(() => {
+    if (!window.WebGLRenderingContext) {
+      setSupportsWebGL(false);
+      setView('atlas');
+    }
+  }, []);
 
   if (!isAuthenticated) {
     return <AuthGate onLogin={handleLogin} />;
@@ -130,13 +139,13 @@ function App() {
             onChange={(e) => handleUpload(e.target.files)}
           />
         </div>
-        <div className="header-right">
-          <div className="view-switch">
-            <button
-              className={`switch-btn ${view === 'mindmap' ? 'active' : ''}`}
-              onClick={() => setView('mindmap')}
+          <div className="header-right">
+            <div className="view-switch">
+              <button
+              className={`switch-btn ${view === 'atlas' ? 'active' : ''}`}
+              onClick={() => setView('atlas')}
             >
-              Atlas
+              Atlas 3D
             </button>
             <button
               className={`switch-btn ${view === 'editor' ? 'active' : ''}`}
@@ -173,16 +182,29 @@ function App() {
         )}
 
         <main className="main-content">
-          {view === 'mindmap' ? (
-            <MindMapView
-              files={fileTree}
-              currentPath={currentPath || '/'}
-              onOpenFile={(path) => {
-                openFile(path);
-                setView('editor');
-              }}
-              onSelectPath={(path) => loadFileTree(path)}
-            />
+          {view === 'atlas' ? (
+            supportsWebGL ? (
+              <ThreeMindMap
+                files={fileTree}
+                currentPath={currentPath || '/'}
+                onOpenFile={(path) => {
+                  openFile(path);
+                  setView('editor');
+                }}
+                onSelectPath={(path) => loadFileTree(path)}
+                onFallback={() => setSupportsWebGL(false)}
+              />
+            ) : (
+              <MindMapView
+                files={fileTree}
+                currentPath={currentPath || '/'}
+                onOpenFile={(path) => {
+                  openFile(path);
+                  setView('editor');
+                }}
+                onSelectPath={(path) => loadFileTree(path)}
+              />
+            )
           ) : (
             <CodeEditor />
           )}

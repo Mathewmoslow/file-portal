@@ -21,6 +21,9 @@
     "mime-types": "^2.1.35",
     "bcryptjs": "^2.4.3",
     "ssh2-sftp-client": "^9.0.4",
+    "@react-three/drei": "^9.80.0",
+    "@react-three/fiber": "^8.15.10",
+    "three": "^0.152.2",
     "vite": "^6.0.3",
     "@vitejs/plugin-react": "^4.3.4",
     "typescript": "~5.6.2"
