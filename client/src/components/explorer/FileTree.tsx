@@ -333,11 +333,24 @@ export const FileTree = () => {
     return '/' + parts.join('/');
   };
 
+  const breadcrumbs = () => {
+    const parts = currentPath.split('/').filter(Boolean);
+    const crumbs = ['/', ...parts.map((_, idx) => '/' + parts.slice(0, idx + 1).join('/'))];
+    return crumbs;
+  };
+
   return (
     <div className="file-tree">
       <div className="tree-header">
         <h3>Files</h3>
-        <span className="tree-path-inline">{currentPath || '/'}</span>
+        <div className="tree-breadcrumb">
+          {breadcrumbs().map((p, idx) => (
+            <span key={p} onClick={() => navigateTo(p)} className="crumb">
+              {idx === 0 ? 'Root' : p.split('/').filter(Boolean).pop()}
+              {idx < breadcrumbs().length - 1 && <span className="crumb-sep">/</span>}
+            </span>
+          ))}
+        </div>
         <input
           ref={fileInputRef}
           type="file"
