@@ -25,6 +25,12 @@ function App() {
     setIsAuthenticated(api.isAuthenticated());
   }, []);
 
+const [newItemModal, setNewItemModal] = useState<{ open: boolean; type: 'file' | 'folder' }>({
+    open: false,
+    type: 'file',
+  });
+  const [newItemName, setNewItemName] = useState('');
+
   const handleLogin = () => {
     setIsAuthenticated(true);
   };
@@ -115,6 +121,17 @@ function App() {
     }
   };
 
+  const createItem = async () => {
+    if (!newItemName.trim()) return;
+    if (newItemModal.type === 'file') {
+      await createFile(normalizePath(currentPath || '/', newItemName.trim()), '');
+    } else {
+      await createDirectory(normalizePath(currentPath || '/', newItemName.trim()));
+    }
+    setNewItemModal({ open: false, type: 'file' });
+    setNewItemName('');
+  };
+
   return (
     <div className="app" ref={appRef}>
       <header className="app-header">
@@ -124,8 +141,8 @@ function App() {
         </div>
         <div className="header-actions">
           <button onClick={handleUp} className="text-btn">Up</button>
-          <button onClick={() => createFile('/untitled.txt', '')} className="text-btn">New File</button>
-          <button onClick={() => createDirectory('/new-folder')} className="text-btn">New Folder</button>
+          <button onClick={() => setNewItemModal({ open: true, type: 'file' })} className="text-btn">New File</button>
+          <button onClick={() => setNewItemModal({ open: true, type: 'folder' })} className="text-btn">New Folder</button>
           <button onClick={() => uploadInputRef.current?.click()} className="text-btn">Upload</button>
           <input
             type="file"
@@ -210,6 +227,25 @@ function App() {
           )}
         </main>
       </div>
+
+      {newItemModal.open && (
+        <div className="modal-backdrop" onClick={() => setNewItemModal({ open: false, type: 'file' })}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h2>{newItemModal.type === 'file' ? 'Create File' : 'Create Folder'}</h2>
+            <input
+              autoFocus
+              type="text"
+              value={newItemName}
+              onChange={(e) => setNewItemName(e.target.value)}
+              placeholder={newItemModal.type === 'file' ? 'index.html' : 'assets'}
+            />
+            <div className="modal-actions">
+              <button className="text-btn" onClick={() => setNewItemModal({ open: false, type: 'file' })}>Cancel</button>
+              <button className="text-btn" onClick={createItem}>Create</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

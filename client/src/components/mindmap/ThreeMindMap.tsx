@@ -96,25 +96,60 @@ export const ThreeMindMap = ({
   }, [search, files]);
 
   const layout = useMemo(() => {
+    const now = Date.now();
+    const sixMonthsMs = 1000 * 60 * 60 * 24 * 30 * 6;
     const dirs = files.filter((f) => f.type === 'directory');
     const docs = files.filter((f) => f.type === 'file');
-    const polar = (items: FileNode[], radius: number, yOffset = 0) =>
-      items.map((item, idx) => {
-        const angle = (idx / Math.max(items.length, 1)) * Math.PI * 2;
+
+    const recent = docs
+      .filter((f) => f.modified && now - new Date(f.modified).getTime() < sixMonthsMs)
+      .slice(0, 12);
+    const large = docs.filter((f) => (f.size || 0) > 300000).slice(0, 12);
+    const unused = docs.filter((f) => f.modified && now - new Date(f.modified).getTime() >= sixMonthsMs).slice(0, 12);
+    const byType = {
+      Images: docs.filter((f) => /\.(png|jpe?g|gif|svg)$/i.test(f.name)).slice(0, 12),
+      Documents: docs.filter((f) => /\.(md|txt|docx?|pdf)$/i.test(f.name)).slice(0, 12),
+      Code: docs.filter((f) => /\.(ts|tsx|js|jsx|json|css|html)$/i.test(f.name)).slice(0, 12),
+      Media: docs.filter((f) => /\.(mp3|wav|mp4|mov)$/i.test(f.name)).slice(0, 12),
+    };
+    const duplicates: FileNode[] = [];
+    const nameMap = new Map<string, FileNode[]>();
+    docs.forEach((f) => {
+      const base = f.name.toLowerCase();
+      nameMap.set(base, [...(nameMap.get(base) || []), f]);
+    });
+    nameMap.forEach((arr) => {
+      if (arr.length > 1) duplicates.push(...arr);
+    });
+
+    const groups: { label: string; nodes: FileNode[]; offset: [number, number] }[] = [
+      { label: 'Recent', nodes: recent, offset: [-12, 0] },
+      { label: 'Large', nodes: large, offset: [12, 0] },
+      { label: 'Unused', nodes: unused, offset: [0, 10] },
+      { label: 'Duplicates', nodes: duplicates, offset: [0, -10] },
+      { label: 'Images', nodes: byType.Images, offset: [-12, -10] },
+      { label: 'Documents', nodes: byType.Documents, offset: [12, -10] },
+      { label: 'Code', nodes: byType.Code, offset: [-12, 10] },
+      { label: 'Media', nodes: byType.Media, offset: [12, 10] },
+    ];
+
+    const positionedGroups = groups.map((group, gi) => {
+      const nodes = group.nodes.map((item, idx) => {
+        const angle = (idx / Math.max(group.nodes.length, 1)) * Math.PI * 2;
         return {
           ...item,
           position: [
-            Math.cos(angle) * radius,
-            yOffset + Math.sin(angle * 0.5) * 2,
-            Math.sin(angle) * radius,
+            group.offset[0] + Math.cos(angle) * 3,
+            Math.sin(angle * 0.5),
+            group.offset[1] + Math.sin(angle) * 3,
           ] as [number, number, number],
           height: Math.max(0.6, Math.log(item.size || 2)),
         };
       });
-    return {
-      roots: polar(dirs, 6, 0),
-      leaves: polar(docs, 10, -1),
-    };
+      return { ...group, nodes };
+    });
+
+    return { roots: dirs, groups: positionedGroups };
   }, [files]);
 
   if (!supported) {
@@ -202,52 +237,45 @@ export const ThreeMindMap = ({
             </Html>
           </group>
 
-          {layout.roots.map((node) => (
-            <group
-              key={node.path}
-              position={node.position}
-              onClick={() => {
-                onSelectPath(node.path);
-                focusRef.current = node.path;
-              }}
-              onPointerOver={() => setHovered(node.path)}
-              onPointerOut={() => setHovered(null)}
-            >
-              <mesh>
-                <boxGeometry args={[1.4, node.height, 1.4]} />
-                <meshStandardMaterial
-                  color={focused === node.path || hovered === node.path ? '#14524b' : '#202020'}
-                />
-              </mesh>
-              <Html position={[0, node.height / 2 + 0.8, 0]} center>
-                <div className="three-label">
-                  <div className="label-name">{node.name}</div>
-                  <div className="label-meta">dir</div>
-                </div>
+          {layout.groups.map((group) => (
+            <group key={group.label}>
+              <Html position={[group.offset[0], 0.4, group.offset[1]]} center>
+                <div className="three-label root">{group.label}</div>
               </Html>
-            </group>
-          ))}
-
-          {layout.leaves.map((node) => (
-            <group
-              key={node.path}
-              position={node.position}
-              onClick={() => onOpenFile(node.path)}
-              onPointerOver={() => setHovered(node.path)}
-              onPointerOut={() => setHovered(null)}
-            >
-              <mesh>
-                <boxGeometry args={[1.1, node.height * 0.8, 1.1]} />
-                <meshStandardMaterial
-                  color={hovered === node.path ? '#e26d5c' : '#3b3b3b'}
-                />
-              </mesh>
-              <Html position={[0, node.height * 0.4 + 0.7, 0]} center>
-                <div className="three-label">
-                  <div className="label-name">{node.name}</div>
-                  <div className="label-meta">file</div>
-                </div>
-              </Html>
+              {group.nodes.map((node) => (
+                <group
+                  key={node.path}
+                  position={node.position}
+                  onClick={() =>
+                    node.type === 'directory'
+                      ? onSelectPath(node.path)
+                      : onOpenFile(node.path)
+                  }
+                  onPointerOver={() => setHovered(node.path)}
+                  onPointerOut={() => setHovered(null)}
+                >
+                  <mesh>
+                    <boxGeometry args={[1.2, node.height, 1.2]} />
+                    <meshStandardMaterial
+                      color={
+                        node.type === 'directory'
+                          ? focused === node.path || hovered === node.path
+                            ? '#14524b'
+                            : '#202020'
+                          : hovered === node.path
+                          ? '#e26d5c'
+                          : '#3b3b3b'
+                      }
+                    />
+                  </mesh>
+                  <Html position={[0, node.height / 2 + 0.7, 0]} center>
+                    <div className="three-label">
+                      <div className="label-name">{node.name}</div>
+                      <div className="label-meta">{node.type}</div>
+                    </div>
+                  </Html>
+                </group>
+              ))}
             </group>
           ))}
         </Suspense>
