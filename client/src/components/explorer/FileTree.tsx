@@ -22,6 +22,8 @@ export const FileTree = () => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const folderInputRef = useRef<HTMLInputElement | null>(null);
   const [dropActive, setDropActive] = useState(false);
+  const [draggingPath, setDraggingPath] = useState<string | null>(null);
+  const [dropTarget, setDropTarget] = useState<string | null>(null);
   const previewBase = import.meta.env.VITE_PREVIEW_BASE_URL || 'https://files.mathewmoslow.com';
 
   useEffect(() => {
@@ -61,7 +63,32 @@ export const FileTree = () => {
     const isActive = activeFile === node.path;
 
     return (
-      <div key={node.path} className="tree-node" style={{ paddingLeft: `${depth * 12}px` }}>
+      <div
+        key={node.path}
+        className={`tree-node ${dropTarget === node.path ? 'drop-target' : ''}`}
+        style={{ paddingLeft: `${depth * 12}px` }}
+        draggable={node.type === 'file'}
+        onDragStart={() => setDraggingPath(node.path)}
+        onDragEnd={() => {
+          setDraggingPath(null);
+          setDropTarget(null);
+        }}
+        onDragOver={(e) => {
+          if (node.type === 'directory') {
+            e.preventDefault();
+            setDropTarget(node.path);
+          }
+        }}
+        onDrop={(e) => {
+          e.preventDefault();
+          if (!draggingPath || node.type !== 'directory' || draggingPath === node.path) return;
+          const baseName = draggingPath.split('/').pop() || draggingPath;
+          const target = normalizePath(node.path, baseName);
+          handleMove(draggingPath, target);
+          setDraggingPath(null);
+          setDropTarget(null);
+        }}
+      >
         <div
           className={`node-content ${isActive ? 'active' : ''}`}
           onClick={() => handleFileClick(node)}
@@ -180,6 +207,12 @@ export const FileTree = () => {
   const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setDropActive(false);
+  };
+
+  const handleMove = async (from: string, to: string) => {
+    if (from === to) return;
+    await renamePath(from, to);
+    await loadFileTree(currentPath || '/');
   };
 
   const getFilesFromDataTransfer = async (dt: DataTransfer): Promise<File[]> => {
