@@ -67,24 +67,28 @@ export const FileTree = () => {
         key={node.path}
         className={`tree-node ${dropTarget === node.path ? 'drop-target' : ''}`}
         style={{ paddingLeft: `${depth * 12}px` }}
-        draggable={node.type === 'file'}
+        draggable
         onDragStart={() => setDraggingPath(node.path)}
         onDragEnd={() => {
           setDraggingPath(null);
           setDropTarget(null);
         }}
         onDragOver={(e) => {
-          if (node.type === 'directory') {
-            e.preventDefault();
-            setDropTarget(node.path);
-          }
+          e.preventDefault();
+          setDropTarget(node.type === 'directory' ? node.path : null);
         }}
         onDrop={(e) => {
           e.preventDefault();
-          if (!draggingPath || node.type !== 'directory' || draggingPath === node.path) return;
-          const baseName = draggingPath.split('/').pop() || draggingPath;
-          const target = normalizePath(node.path, baseName);
-          handleMove(draggingPath, target);
+          if (draggingPath && node.type === 'directory') {
+            if (draggingPath === node.path || isDescendant(node.path, draggingPath)) {
+              setDraggingPath(null);
+              setDropTarget(null);
+              return;
+            }
+            const baseName = draggingPath.split('/').pop() || draggingPath;
+            const target = normalizePath(node.path, baseName);
+            handleMove(draggingPath, target);
+          }
           setDraggingPath(null);
           setDropTarget(null);
         }}
@@ -189,6 +193,20 @@ export const FileTree = () => {
   const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setDropActive(false);
+    if (draggingPath) {
+      const targetBase = dropTarget || currentPath || '/';
+      const baseName = draggingPath.split('/').pop() || draggingPath;
+      if (draggingPath === targetBase || isDescendant(draggingPath, targetBase)) {
+        setDraggingPath(null);
+        setDropTarget(null);
+        return;
+      }
+      const target = normalizePath(targetBase, baseName);
+      await handleMove(draggingPath, target);
+      setDraggingPath(null);
+      setDropTarget(null);
+      return;
+    }
     const droppedFiles = await getFilesFromDataTransfer(e.dataTransfer);
     const files = droppedFiles.length ? droppedFiles : Array.from(e.dataTransfer.files || []);
     if (!files.length) return;
@@ -202,17 +220,28 @@ export const FileTree = () => {
   const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setDropActive(true);
+    if (draggingPath) {
+      setDropTarget(currentPath || '/');
+    }
   };
 
   const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setDropActive(false);
+    if (!draggingPath) {
+      setDropTarget(null);
+    }
   };
 
   const handleMove = async (from: string, to: string) => {
     if (from === to) return;
     await renamePath(from, to);
     await loadFileTree(currentPath || '/');
+  };
+
+  const isDescendant = (parent: string, child: string) => {
+    const p = parent.replace(/\/+$/, '') + '/';
+    return child !== parent && child.startsWith(p);
   };
 
   const getFilesFromDataTransfer = async (dt: DataTransfer): Promise<File[]> => {
