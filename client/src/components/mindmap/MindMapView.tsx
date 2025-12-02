@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect, useRef } from 'react';
 import './MindMapView.css';
 import type { FileNode } from '../../types';
-import { api } from '../../services/api';
+import { FileModal } from './FileModal';
 
 interface MindMapViewProps {
   files: FileNode[];
@@ -14,11 +14,10 @@ type PositionedNode = FileNode & { x: number; y: number; depth: number };
 
 export const MindMapView = ({ files, currentPath, onOpenFile, onSelectPath }: MindMapViewProps) => {
   const [activePath, setActivePath] = useState<string | null>(null);
-  const [modalFile, setModalFile] = useState<FileNode | null>(null);
+  const [selectedFile, setSelectedFile] = useState<FileNode | null>(null);
   const [search, setSearch] = useState('');
   const [showResults, setShowResults] = useState(false);
   const [searchResults, setSearchResults] = useState<FileNode[]>([]);
-  const [searchLoading, setSearchLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -30,7 +29,7 @@ export const MindMapView = ({ files, currentPath, onOpenFile, onSelectPath }: Mi
       }
       if (e.key === 'Escape') {
         setShowResults(false);
-        setModalFile(null);
+        setSelectedFile(null);
       }
     };
     window.addEventListener('keydown', onKey);
@@ -67,39 +66,37 @@ export const MindMapView = ({ files, currentPath, onOpenFile, onSelectPath }: Mi
   }, [files, search]);
 
   useEffect(() => {
-    const runSearch = async () => {
-      const term = search.trim().toLowerCase();
-      if (term.length < 2) {
-        setSearchResults([]);
-        setSearchLoading(false);
-        return;
-      }
-      setSearchLoading(true);
-      try {
-        const matches: FileNode[] = [];
-        const textFiles = files.filter((f) => f.type === 'file');
-        for (const f of textFiles) {
-          try {
-            const data = await api.readFile(f.path);
-            const content = data.isBinary ? '' : data.content.toLowerCase();
-            if (f.name.toLowerCase().includes(term) || content.includes(term)) {
-              matches.push(f);
-            }
-          } catch {
-            // ignore read errors
-          }
-        }
-        setSearchResults(matches);
-      } finally {
-        setSearchLoading(false);
-      }
-    };
-    runSearch();
+    const term = search.trim().toLowerCase();
+    if (term.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+
+    // Search using cached preview data - much faster!
+    const matches = files.filter((f) => {
+      if (f.type !== 'file') return false;
+
+      // Search in filename
+      if (f.name.toLowerCase().includes(term)) return true;
+
+      // Search in description
+      if (f.description?.toLowerCase().includes(term)) return true;
+
+      // Search in preview text
+      if (f.preview?.toLowerCase().includes(term)) return true;
+
+      // Search in category
+      if (f.category?.toLowerCase().includes(term)) return true;
+
+      return false;
+    });
+
+    setSearchResults(matches);
   }, [search, files]);
 
   const openFromModal = (path: string) => {
     onOpenFile(path);
-    setModalFile(null);
+    setSelectedFile(null);
   };
 
   return (
@@ -132,29 +129,30 @@ export const MindMapView = ({ files, currentPath, onOpenFile, onSelectPath }: Mi
           />
           <span className="search-shortcut">⌘K</span>
           <div className={`search-results ${showResults ? 'active' : ''}`}>
-            {searchLoading && <div className="search-empty">Searching…</div>}
-            {!searchLoading &&
-              (searchResults.length > 0 ? searchResults : filtered).map((item) => (
-                <div
-                  key={item.path}
-                  className="search-result-item"
-                  onClick={() => {
-                    setShowResults(false);
-                    onOpenFile(item.path);
-                  }}
-                >
-                  <div className="result-icon">
-                    <svg viewBox="0 0 24 24" fill="none">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                    </svg>
-                  </div>
-                  <div className="result-info">
-                    <div className="result-name">{item.name}</div>
-                    <div className="result-meta">{item.type}</div>
+            {searchResults.length > 0 && searchResults.map((item) => (
+              <div
+                key={item.path}
+                className="search-result-item"
+                onClick={() => {
+                  setShowResults(false);
+                  setSelectedFile(item);
+                }}
+              >
+                <div className="result-icon">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  </svg>
+                </div>
+                <div className="result-info">
+                  <div className="result-name">{item.name}</div>
+                  <div className="result-meta">
+                    {item.category && <span>{item.category} · </span>}
+                    {item.description ? item.description.substring(0, 60) + '...' : item.name}
                   </div>
                 </div>
-              ))}
-            {!searchLoading && search && searchResults.length === 0 && filtered.length === 0 && (
+              </div>
+            ))}
+            {search && searchResults.length === 0 && (
               <div className="search-empty">No matches</div>
             )}
           </div>
@@ -207,9 +205,14 @@ export const MindMapView = ({ files, currentPath, onOpenFile, onSelectPath }: Mi
         {positionedLeaves.map((node) => (
           <div
             key={node.path}
-            className={`mindmap-node child ${modalFile?.path === node.path ? 'active' : ''}`}
+            className={`mindmap-node child ${selectedFile?.path === node.path ? 'active' : ''}`}
             style={{ left: `${node.x}%`, top: `${node.y}%` }}
-            onClick={() => onOpenFile(node.path)}
+            onClick={() => {
+              const fileNode = files.find(f => f.path === node.path);
+              if (fileNode) {
+                setSelectedFile(fileNode);
+              }
+            }}
           >
             <div className="node-content">
               <div className="node-label">{node.name}</div>
@@ -222,51 +225,14 @@ export const MindMapView = ({ files, currentPath, onOpenFile, onSelectPath }: Mi
         </div>
       </div>
 
-      <div className={`file-modal-overlay ${modalFile ? 'active' : ''}`} onClick={() => setModalFile(null)}>
-        <div className="file-modal" onClick={(e) => e.stopPropagation()}>
-          <div className="modal-hero">
-            <div className="modal-badge">{modalFile?.type || 'File'}</div>
-            <button className="modal-close" onClick={() => setModalFile(null)}>
-              <svg viewBox="0 0 24 24" fill="none">
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
-          </div>
-          <div className="modal-content">
-            <div className="modal-type">{modalFile?.type || 'File'}</div>
-            <h2 className="modal-title">{modalFile?.name || 'Untitled'}</h2>
-            <p className="modal-subtitle">{modalFile?.path}</p>
-
-            <div className="modal-meta">
-              <div className="meta-item">
-                <div className="meta-label">Size</div>
-                <div className="meta-value">{modalFile?.size ? `${modalFile.size} bytes` : '—'}</div>
-              </div>
-              <div className="meta-item">
-                <div className="meta-label">Modified</div>
-                <div className="meta-value">{modalFile?.modified || '—'}</div>
-              </div>
-              <div className="meta-item">
-                <div className="meta-label">Type</div>
-                <div className="meta-value">{modalFile?.type}</div>
-              </div>
-            </div>
-
-            <div className="modal-actions">
-              <button
-                className="btn btn-primary"
-                onClick={() => modalFile && openFromModal(modalFile.path)}
-              >
-                Open in Editor
-              </button>
-              <button className="btn" onClick={() => modalFile && setActivePath(modalFile.path)}>
-                Highlight
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <FileModal
+        file={selectedFile}
+        onClose={() => setSelectedFile(null)}
+        onOpen={(path) => {
+          setSelectedFile(null);
+          onOpenFile(path);
+        }}
+      />
     </div>
   );
 };

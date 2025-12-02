@@ -2,7 +2,7 @@ import { Suspense, useMemo, useState, useRef, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Html } from '@react-three/drei';
 import type { FileNode } from '../../types';
-import { api } from '../../services/api';
+import { FileModal } from './FileModal';
 import './ThreeMindMap.css';
 
 interface ThreeMindMapProps {
@@ -38,8 +38,8 @@ export const ThreeMindMap = ({
   const focusRef = useRef<string | null>(null);
   const [search, setSearch] = useState('');
   const [searchResults, setSearchResults] = useState<FileNode[]>([]);
-  const [searchLoading, setSearchLoading] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<FileNode | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -65,34 +65,32 @@ export const ThreeMindMap = ({
   }, []);
 
   useEffect(() => {
-    const runSearch = async () => {
-      const term = search.trim().toLowerCase();
-      if (term.length < 2) {
-        setSearchResults([]);
-        setSearchLoading(false);
-        return;
-      }
-      setSearchLoading(true);
-      try {
-        const matches: FileNode[] = [];
-        const textFiles = files.filter((f) => f.type === 'file');
-        for (const f of textFiles) {
-          try {
-            const data = await api.readFile(f.path);
-            const content = data.isBinary ? '' : data.content.toLowerCase();
-            if (f.name.toLowerCase().includes(term) || content.includes(term)) {
-              matches.push(f);
-            }
-          } catch {
-            // ignore read errors
-          }
-        }
-        setSearchResults(matches);
-      } finally {
-        setSearchLoading(false);
-      }
-    };
-    runSearch();
+    const term = search.trim().toLowerCase();
+    if (term.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+
+    // Search using cached preview data - much faster!
+    const matches = files.filter((f) => {
+      if (f.type !== 'file') return false;
+
+      // Search in filename
+      if (f.name.toLowerCase().includes(term)) return true;
+
+      // Search in description
+      if (f.description?.toLowerCase().includes(term)) return true;
+
+      // Search in preview text
+      if (f.preview?.toLowerCase().includes(term)) return true;
+
+      // Search in category
+      if (f.category?.toLowerCase().includes(term)) return true;
+
+      return false;
+    });
+
+    setSearchResults(matches);
   }, [search, files]);
 
   const layout = useMemo(() => {
@@ -147,29 +145,30 @@ export const ThreeMindMap = ({
           />
           <span className="search-shortcut">⌘K</span>
           <div className={`search-results ${showResults ? 'active' : ''}`}>
-            {searchLoading && <div className="search-empty">Searching…</div>}
-            {!searchLoading &&
-              (searchResults.length > 0 ? searchResults : []).map((item) => (
-                <div
-                  key={item.path}
-                  className="search-result-item"
-                  onClick={() => {
-                    setShowResults(false);
-                    onOpenFile(item.path);
-                  }}
-                >
-                  <div className="result-icon">
-                    <svg viewBox="0 0 24 24" fill="none">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                    </svg>
-                  </div>
-                  <div className="result-info">
-                    <div className="result-name">{item.name}</div>
-                    <div className="result-meta">{item.type}</div>
+            {searchResults.length > 0 && searchResults.map((item) => (
+              <div
+                key={item.path}
+                className="search-result-item"
+                onClick={() => {
+                  setShowResults(false);
+                  setSelectedFile(item);
+                }}
+              >
+                <div className="result-icon">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  </svg>
+                </div>
+                <div className="result-info">
+                  <div className="result-name">{item.name}</div>
+                  <div className="result-meta">
+                    {item.category && <span>{item.category} · </span>}
+                    {item.description ? item.description.substring(0, 60) + '...' : item.name}
                   </div>
                 </div>
-              ))}
-            {!searchLoading && search && searchResults.length === 0 && (
+              </div>
+            ))}
+            {search && searchResults.length === 0 && (
               <div className="search-empty">No matches</div>
             )}
           </div>
@@ -232,7 +231,12 @@ export const ThreeMindMap = ({
             <group
               key={node.path}
               position={node.position}
-              onClick={() => onOpenFile(node.path)}
+              onClick={() => {
+                const fileNode = files.find(f => f.path === node.path);
+                if (fileNode) {
+                  setSelectedFile(fileNode);
+                }
+              }}
               onPointerOver={() => setHovered(node.path)}
               onPointerOut={() => setHovered(null)}
             >
@@ -245,7 +249,9 @@ export const ThreeMindMap = ({
               <Html position={[0, node.height * 0.4 + 0.7, 0]} center>
                 <div className="three-label">
                   <div className="label-name">{node.name}</div>
-                  <div className="label-meta">file</div>
+                  <div className="label-meta">
+                    {node.category || 'file'}
+                  </div>
                 </div>
               </Html>
             </group>
@@ -253,6 +259,15 @@ export const ThreeMindMap = ({
         </Suspense>
         <OrbitControls enablePan enableRotate enableZoom />
       </Canvas>
+
+      <FileModal
+        file={selectedFile}
+        onClose={() => setSelectedFile(null)}
+        onOpen={(path) => {
+          setSelectedFile(null);
+          onOpenFile(path);
+        }}
+      />
     </div>
   );
 };

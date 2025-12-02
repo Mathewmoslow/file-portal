@@ -5,6 +5,11 @@ export interface FileNode {
   size?: number;
   modified?: string;
   children?: FileNode[];
+  preview?: string;        // First ~200 chars of content for search/preview
+  category?: string;       // Derived from folder structure
+  description?: string;    // From HTML meta tags or manual
+  thumbnail?: string;      // For images (base64 or URL)
+  tags?: string[];        // Additional tags for filtering
 }
 
 export interface AuthResponse {
