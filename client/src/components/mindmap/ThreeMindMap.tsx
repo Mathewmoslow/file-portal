@@ -207,14 +207,32 @@ export const ThreeMindMap = ({
         <Suspense fallback={null}>
           <gridHelper args={[40, 20, '#d9d2c5', '#e7e0d2']} position={[0, -0.01, 0]} />
 
-          {/* Wireframe sphere to show structure */}
+          {/* Glass sphere with depth and shading */}
           <mesh position={[0, 0, 0]}>
-            <sphereGeometry args={[layout.length > 0 ? 15 - currentPath.split('/').filter(Boolean).length * 2 : 15, 24, 16]} />
+            <sphereGeometry args={[layout.length > 0 ? 15 - currentPath.split('/').filter(Boolean).length * 2 : 15, 32, 32]} />
+            <meshPhysicalMaterial
+              color="#e7e0d2"
+              transparent={true}
+              opacity={0.25}
+              metalness={0.1}
+              roughness={0.3}
+              clearcoat={0.8}
+              clearcoatRoughness={0.2}
+              transmission={0.3}
+              thickness={0.5}
+              envMapIntensity={1}
+              side={2}
+            />
+          </mesh>
+
+          {/* Wireframe overlay for grid structure */}
+          <mesh position={[0, 0, 0]}>
+            <sphereGeometry args={[layout.length > 0 ? 15.1 - currentPath.split('/').filter(Boolean).length * 2 : 15.1, 24, 16]} />
             <meshBasicMaterial
-              color="#d9d2c5"
+              color="#b08968"
               wireframe={true}
               transparent={true}
-              opacity={0.15}
+              opacity={0.4}
             />
           </mesh>
 
