@@ -124,8 +124,8 @@ export const ThreeMindMap = ({
       });
 
     return {
-      roots: galaxy(dirs, 10, 4),    // Folders closer, less spread
-      leaves: galaxy(docs, 18, 8),   // Files further out, more spread
+      roots: galaxy(dirs, 12, 6),     // Folders - medium distance, moderate spread
+      leaves: galaxy(docs, 25, 15),   // Files - far out, lots of spread for galaxy feel
     };
   }, [files]);
 
@@ -227,12 +227,12 @@ export const ThreeMindMap = ({
               onPointerOut={() => setHovered(null)}
             >
               <mesh>
-                <boxGeometry args={[1.4, node.height, 1.4]} />
+                <boxGeometry args={[0.5, node.height * 0.4, 0.5]} />
                 <meshStandardMaterial
                   color={focused === node.path || hovered === node.path ? '#14524b' : '#202020'}
                 />
               </mesh>
-              <Html position={[0, node.height / 2 + 0.8, 0]} center>
+              <Html position={[0, node.height * 0.2 + 0.6, 0]} center>
                 <div className="three-label">
                   <div className="label-name">{node.name}</div>
                   <div className="label-meta">dir</div>
@@ -255,12 +255,12 @@ export const ThreeMindMap = ({
               onPointerOut={() => setHovered(null)}
             >
               <mesh>
-                <boxGeometry args={[1.1, node.height * 0.8, 1.1]} />
+                <boxGeometry args={[0.35, node.height * 0.3, 0.35]} />
                 <meshStandardMaterial
                   color={hovered === node.path ? '#e26d5c' : '#3b3b3b'}
                 />
               </mesh>
-              <Html position={[0, node.height * 0.4 + 0.7, 0]} center>
+              <Html position={[0, node.height * 0.15 + 0.5, 0]} center>
                 <div className="three-label">
                   <div className="label-name">{node.name}</div>
                   <div className="label-meta">
