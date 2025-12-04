@@ -123,11 +123,14 @@ export const ThreeMindMap = ({
         };
       });
 
+    // Determine depth based on current path
+    const pathDepth = currentPath.split('/').filter(Boolean).length;
+
     return {
-      roots: galaxy(dirs, 12, 6),     // Folders - medium distance, moderate spread
-      leaves: galaxy(docs, 25, 15),   // Files - far out, lots of spread for galaxy feel
+      roots: galaxy(dirs, 12 - pathDepth * 2, 6),     // Folders get closer as you go deeper
+      leaves: galaxy(docs, 25 - pathDepth * 3, 15),   // Files also get closer, showing hierarchy
     };
-  }, [files]);
+  }, [files, currentPath]);
 
   if (!supported) {
     return null;
@@ -226,50 +229,81 @@ export const ThreeMindMap = ({
               onPointerOver={() => setHovered(node.path)}
               onPointerOut={() => setHovered(null)}
             >
-              <mesh>
-                <boxGeometry args={[0.5, node.height * 0.4, 0.5]} />
+              {/* Folder as octahedron (diamond shape) */}
+              <mesh rotation={[0, Math.PI / 4, 0]}>
+                <octahedronGeometry args={[0.4, 0]} />
                 <meshStandardMaterial
-                  color={focused === node.path || hovered === node.path ? '#14524b' : '#202020'}
+                  color={focused === node.path || hovered === node.path ? '#14524b' : '#3d3428'}
+                  metalness={0.3}
+                  roughness={0.6}
                 />
               </mesh>
-              <Html position={[0, node.height * 0.2 + 0.6, 0]} center>
-                <div className="three-label">
-                  <div className="label-name">{node.name}</div>
-                  <div className="label-meta">dir</div>
-                </div>
-              </Html>
+              {hovered === node.path && (
+                <Html position={[0, 0.8, 0]} center style={{ pointerEvents: 'none' }}>
+                  <div className="three-label">
+                    <div className="label-name">{node.name}</div>
+                  </div>
+                </Html>
+              )}
             </group>
           ))}
 
-          {layout.leaves.map((node) => (
-            <group
-              key={node.path}
-              position={node.position}
-              onClick={() => {
-                const fileNode = files.find(f => f.path === node.path);
-                if (fileNode) {
-                  setSelectedFile(fileNode);
-                }
-              }}
-              onPointerOver={() => setHovered(node.path)}
-              onPointerOut={() => setHovered(null)}
-            >
-              <mesh>
-                <boxGeometry args={[0.35, node.height * 0.3, 0.35]} />
-                <meshStandardMaterial
-                  color={hovered === node.path ? '#e26d5c' : '#3b3b3b'}
-                />
-              </mesh>
-              <Html position={[0, node.height * 0.15 + 0.5, 0]} center>
-                <div className="three-label">
-                  <div className="label-name">{node.name}</div>
-                  <div className="label-meta">
-                    {node.category || 'file'}
-                  </div>
-                </div>
-              </Html>
-            </group>
-          ))}
+          {layout.leaves.map((node) => {
+            const ext = node.name.split('.').pop()?.toLowerCase() || '';
+            const isHTML = ext === 'html' || ext === 'htm';
+            const isImage = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'].includes(ext);
+            const isDoc = ['pdf', 'doc', 'docx', 'txt', 'md'].includes(ext);
+            const isCode = ['js', 'ts', 'tsx', 'jsx', 'py', 'css', 'json'].includes(ext);
+
+            return (
+              <group
+                key={node.path}
+                position={node.position}
+                onClick={() => {
+                  const fileNode = files.find(f => f.path === node.path);
+                  if (fileNode) {
+                    setSelectedFile(fileNode);
+                  }
+                }}
+                onPointerOver={() => setHovered(node.path)}
+                onPointerOut={() => setHovered(null)}
+              >
+                {/* Different shapes for different file types */}
+                <mesh rotation={isHTML ? [0, Math.PI / 4, Math.PI / 4] : [0, 0, 0]}>
+                  {isHTML ? (
+                    <tetrahedronGeometry args={[0.3, 0]} />
+                  ) : isImage ? (
+                    <cylinderGeometry args={[0.25, 0.25, 0.15, 8]} />
+                  ) : isDoc ? (
+                    <boxGeometry args={[0.3, 0.4, 0.05]} />
+                  ) : isCode ? (
+                    <icosahedronGeometry args={[0.25, 0]} />
+                  ) : (
+                    <sphereGeometry args={[0.2, 8, 8]} />
+                  )}
+                  <meshStandardMaterial
+                    color={
+                      hovered === node.path ? '#e26d5c' :
+                      isHTML ? '#4a8c7e' :
+                      isImage ? '#7d6b9d' :
+                      isDoc ? '#b08968' :
+                      isCode ? '#6b8e9d' :
+                      '#5a5652'
+                    }
+                    metalness={0.2}
+                    roughness={0.7}
+                  />
+                </mesh>
+                {hovered === node.path && (
+                  <Html position={[0, 0.6, 0]} center style={{ pointerEvents: 'none' }}>
+                    <div className="three-label">
+                      <div className="label-name">{node.name}</div>
+                    </div>
+                  </Html>
+                )}
+              </group>
+            );
+          })}
         </Suspense>
         <OrbitControls enablePan enableRotate enableZoom />
       </Canvas>
