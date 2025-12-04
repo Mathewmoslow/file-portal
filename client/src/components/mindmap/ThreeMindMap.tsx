@@ -278,20 +278,20 @@ export const ThreeMindMap = ({
                 onPointerOver={() => setHovered(node.path)}
                 onPointerOut={() => setHovered(null)}
               >
-                {/* Different shapes for different file types */}
+                {/* Different shapes for different file types - LARGER */}
                 <mesh rotation={isHTML ? [0, Math.PI / 4, Math.PI / 4] : isDir ? [0, Math.PI / 4, 0] : [0, 0, 0]}>
                   {isDir ? (
-                    <octahedronGeometry args={[0.4, 0]} />
+                    <octahedronGeometry args={[0.6, 0]} />
                   ) : isHTML ? (
-                    <tetrahedronGeometry args={[0.3, 0]} />
+                    <tetrahedronGeometry args={[0.5, 0]} />
                   ) : isImage ? (
-                    <cylinderGeometry args={[0.25, 0.25, 0.15, 8]} />
+                    <cylinderGeometry args={[0.4, 0.4, 0.25, 8]} />
                   ) : isDoc ? (
-                    <boxGeometry args={[0.3, 0.4, 0.05]} />
+                    <boxGeometry args={[0.5, 0.6, 0.08]} />
                   ) : isCode ? (
-                    <icosahedronGeometry args={[0.25, 0]} />
+                    <icosahedronGeometry args={[0.4, 0]} />
                   ) : (
-                    <sphereGeometry args={[0.2, 8, 8]} />
+                    <sphereGeometry args={[0.35, 8, 8]} />
                   )}
                   <meshStandardMaterial
                     color={
@@ -308,10 +308,13 @@ export const ThreeMindMap = ({
                   />
                 </mesh>
                 {/* Always show labels */}
-                <Html position={[0, 0.6, 0]} center style={{ pointerEvents: 'none' }}>
+                <Html position={[0, 0.6, 0]} center style={{ pointerEvents: 'none' }} zIndexRange={[0, 0]}>
                   <div className="three-label" style={{
                     background: hovered === node.path ? 'rgba(226, 109, 92, 0.95)' : 'rgba(255, 255, 255, 0.85)',
-                    color: hovered === node.path ? '#fff' : '#141210'
+                    color: hovered === node.path ? '#fff' : '#141210',
+                    fontSize: '9px',
+                    padding: '2px 6px',
+                    opacity: 0.8
                   }}>
                     <div className="label-name">{node.name}</div>
                   </div>
