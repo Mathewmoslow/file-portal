@@ -206,6 +206,18 @@ export const ThreeMindMap = ({
         <directionalLight position={[5, 10, 5]} intensity={0.8} />
         <Suspense fallback={null}>
           <gridHelper args={[40, 20, '#d9d2c5', '#e7e0d2']} position={[0, -0.01, 0]} />
+
+          {/* Wireframe sphere to show structure */}
+          <mesh position={[0, 0, 0]}>
+            <sphereGeometry args={[layout.length > 0 ? 15 - currentPath.split('/').filter(Boolean).length * 2 : 15, 24, 16]} />
+            <meshBasicMaterial
+              color="#d9d2c5"
+              wireframe={true}
+              transparent={true}
+              opacity={0.15}
+            />
+          </mesh>
+
           <group>
             <mesh
               position={[0, 0, 0]}
