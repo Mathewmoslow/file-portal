@@ -92,9 +92,15 @@ export async function listDirectory(requestedPath: string) {
     // Check if directory exists first
     const exists = await client.exists(remotePath);
     if (!exists) {
-      // If root doesn't exist, return empty array instead of erroring
+      // If root doesn't exist, try to create it
       if (safePath === '/') {
-        return [];
+        try {
+          await client.mkdir(remotePath, true);
+          return []; // Return empty array for newly created directory
+        } catch (mkdirError) {
+          console.error('Failed to create root directory:', mkdirError);
+          return []; // Still return empty array rather than erroring
+        }
       }
       throw new Error('DIRECTORY_NOT_FOUND');
     }
