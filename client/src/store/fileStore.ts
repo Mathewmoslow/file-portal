@@ -42,7 +42,9 @@ export const useFileStore = create<FileStore>((set, get) => ({
       const items = await api.listFiles(path);
       set({ fileTree: items, currentPath: path || '/', isLoading: false });
     } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+      const errorMsg = error.response?.data?.error?.message || error.message || 'Failed to load files';
+      console.error('Load file tree error:', errorMsg, error.response?.data);
+      set({ error: errorMsg, isLoading: false, fileTree: [] });
     }
   },
 

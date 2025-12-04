@@ -186,6 +186,41 @@
   background: rgba(0, 0, 0, 0.28);
 }
 
+/* Error Toast */
+.error-toast {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  z-index: 2000;
+  background: #e26d5c;
+  color: white;
+  padding: 16px 20px;
+  border-radius: 4px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  animation: slideInRight 0.3s ease;
+  max-width: 400px;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.error-content {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.error-content strong {
+  font-weight: 600;
+}
+
 /* Modal Styling */
 .modal-backdrop {
   position: fixed;

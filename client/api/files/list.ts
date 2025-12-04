@@ -39,9 +39,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         error: { code: 'INVALID_PATH', message: 'Invalid path' },
       });
     }
+    if (error.message === 'DIRECTORY_NOT_FOUND') {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Directory not found' },
+      });
+    }
+    if (error.message.includes('SFTP configuration missing')) {
+      return res.status(500).json({
+        success: false,
+        error: {
+          code: 'SFTP_NOT_CONFIGURED',
+          message: 'SFTP is not configured. Please set SFTP_HOST, SFTP_USERNAME, and SFTP_PASSWORD in Vercel environment variables.'
+        },
+      });
+    }
+    console.error('List directory error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'SERVER_ERROR', message: error.message },
+      error: { code: 'SERVER_ERROR', message: error.message || 'Unknown error' },
     });
   }
 }

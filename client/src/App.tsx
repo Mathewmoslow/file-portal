@@ -17,7 +17,7 @@ function App() {
   const [supportsWebGL, setSupportsWebGL] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const appRef = useRef<HTMLDivElement | null>(null);
-  const { fileTree, currentPath, loadFileTree, openFile, createFile, createDirectory, uploadFile } = useFileStore();
+  const { fileTree, currentPath, loadFileTree, openFile, createFile, createDirectory, uploadFile, error } = useFileStore();
   const uploadInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -227,6 +227,14 @@ const [newItemModal, setNewItemModal] = useState<{ open: boolean; type: 'file' |
           )}
         </main>
       </div>
+
+      {error && (
+        <div className="error-toast">
+          <div className="error-content">
+            <strong>Error:</strong> {error}
+          </div>
+        </div>
+      )}
 
       {newItemModal.open && (
         <div className="modal-backdrop" onClick={() => setNewItemModal({ open: false, type: 'file' })}>

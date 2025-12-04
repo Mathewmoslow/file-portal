@@ -88,6 +88,17 @@ function getCategoryFromPath(filePath: string): string | undefined {
 export async function listDirectory(requestedPath: string) {
   return withClient(async (client) => {
     const { remotePath, safePath } = toRemotePath(requestedPath || '/');
+
+    // Check if directory exists first
+    const exists = await client.exists(remotePath);
+    if (!exists) {
+      // If root doesn't exist, return empty array instead of erroring
+      if (safePath === '/') {
+        return [];
+      }
+      throw new Error('DIRECTORY_NOT_FOUND');
+    }
+
     const entries = await client.list(remotePath);
 
     const enrichedEntries = await Promise.all(
