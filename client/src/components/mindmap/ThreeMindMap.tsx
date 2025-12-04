@@ -96,22 +96,36 @@ export const ThreeMindMap = ({
   const layout = useMemo(() => {
     const dirs = files.filter((f) => f.type === 'directory');
     const docs = files.filter((f) => f.type === 'file');
-    const polar = (items: FileNode[], radius: number) =>
+
+    // Galaxy-style layout with random variations
+    const galaxy = (items: FileNode[], baseRadius: number, spread: number) =>
       items.map((item, idx) => {
-        const angle = (idx / Math.max(items.length, 1)) * Math.PI * 2;
+        // Use consistent random based on file path for stable positioning
+        const seed = item.path.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+        const random = (offset: number) => {
+          const x = Math.sin(seed + offset) * 10000;
+          return x - Math.floor(x);
+        };
+
+        // Spiral pattern with randomness
+        const angle = (idx / Math.max(items.length, 1)) * Math.PI * 2 + random(1) * Math.PI * 0.3;
+        const radiusVariation = baseRadius + (random(2) - 0.5) * spread;
+        const heightVariation = (random(3) - 0.5) * 4;
+
         return {
           ...item,
           position: [
-            Math.cos(angle) * radius,
-            Math.sin(angle * 0.4),
-            Math.sin(angle) * radius,
+            Math.cos(angle) * radiusVariation + (random(4) - 0.5) * 3,
+            Math.sin(angle * 0.3) * 2 + heightVariation,
+            Math.sin(angle) * radiusVariation + (random(5) - 0.5) * 3,
           ] as [number, number, number],
-          height: Math.max(0.6, Math.log(item.size || 2)),
+          height: Math.max(0.6, Math.log(item.size || 2) * 0.8),
         };
       });
+
     return {
-      roots: polar(dirs, 8),
-      leaves: polar(docs, 14),
+      roots: galaxy(dirs, 10, 4),    // Folders closer, less spread
+      leaves: galaxy(docs, 18, 8),   // Files further out, more spread
     };
   }, [files]);
 
