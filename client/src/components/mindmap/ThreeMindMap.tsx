@@ -96,40 +96,44 @@ export const ThreeMindMap = ({
   const layout = useMemo(() => {
     const dirs = files.filter((f) => f.type === 'directory');
     const docs = files.filter((f) => f.type === 'file');
+    const allItems = [...dirs, ...docs];
 
-    // Galaxy-style layout with random variations
-    const galaxy = (items: FileNode[], baseRadius: number, spread: number) =>
-      items.map((item, idx) => {
-        // Use consistent random based on file path for stable positioning
+    // Fibonacci sphere layout - evenly distributed points on sphere surface
+    const sphereLayout = (items: FileNode[], radius: number) => {
+      const goldenRatio = (1 + Math.sqrt(5)) / 2;
+
+      return items.map((item, idx) => {
+        // Fibonacci spiral distribution
+        const i = idx + 0.5;
+        const phi = Math.acos(1 - 2 * i / items.length);
+        const theta = 2 * Math.PI * i / goldenRatio;
+
+        // Add slight randomness based on file path for variety
         const seed = item.path.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
         const random = (offset: number) => {
           const x = Math.sin(seed + offset) * 10000;
-          return x - Math.floor(x);
+          return (x - Math.floor(x) - 0.5) * 0.2; // Small variation
         };
 
-        // Spiral pattern with randomness
-        const angle = (idx / Math.max(items.length, 1)) * Math.PI * 2 + random(1) * Math.PI * 0.3;
-        const radiusVariation = baseRadius + (random(2) - 0.5) * spread;
-        const heightVariation = (random(3) - 0.5) * 4;
+        const r = radius + random(1) * 2;
 
         return {
           ...item,
           position: [
-            Math.cos(angle) * radiusVariation + (random(4) - 0.5) * 3,
-            Math.sin(angle * 0.3) * 2 + heightVariation,
-            Math.sin(angle) * radiusVariation + (random(5) - 0.5) * 3,
+            r * Math.sin(phi) * Math.cos(theta) + random(2),
+            r * Math.cos(phi) + random(3),
+            r * Math.sin(phi) * Math.sin(theta) + random(4),
           ] as [number, number, number],
           height: Math.max(0.6, Math.log(item.size || 2) * 0.8),
         };
       });
-
-    // Determine depth based on current path
-    const pathDepth = currentPath.split('/').filter(Boolean).length;
-
-    return {
-      roots: galaxy(dirs, 12 - pathDepth * 2, 6),     // Folders get closer as you go deeper
-      leaves: galaxy(docs, 25 - pathDepth * 3, 15),   // Files also get closer, showing hierarchy
     };
+
+    // Determine depth based on current path - closer when deeper
+    const pathDepth = currentPath.split('/').filter(Boolean).length;
+    const sphereRadius = 15 - pathDepth * 2;
+
+    return sphereLayout(allItems, sphereRadius);
   }, [files, currentPath]);
 
   if (!supported) {
@@ -218,37 +222,8 @@ export const ThreeMindMap = ({
             </Html>
           </group>
 
-          {layout.roots.map((node) => (
-            <group
-              key={node.path}
-              position={node.position}
-              onClick={() => {
-                onSelectPath(node.path);
-                focusRef.current = node.path;
-              }}
-              onPointerOver={() => setHovered(node.path)}
-              onPointerOut={() => setHovered(null)}
-            >
-              {/* Folder as octahedron (diamond shape) */}
-              <mesh rotation={[0, Math.PI / 4, 0]}>
-                <octahedronGeometry args={[0.4, 0]} />
-                <meshStandardMaterial
-                  color={focused === node.path || hovered === node.path ? '#14524b' : '#3d3428'}
-                  metalness={0.3}
-                  roughness={0.6}
-                />
-              </mesh>
-              {hovered === node.path && (
-                <Html position={[0, 0.8, 0]} center style={{ pointerEvents: 'none' }}>
-                  <div className="three-label">
-                    <div className="label-name">{node.name}</div>
-                  </div>
-                </Html>
-              )}
-            </group>
-          ))}
-
-          {layout.leaves.map((node) => {
+          {layout.map((node) => {
+            const isDir = node.type === 'directory';
             const ext = node.name.split('.').pop()?.toLowerCase() || '';
             const isHTML = ext === 'html' || ext === 'htm';
             const isImage = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'].includes(ext);
@@ -260,17 +235,24 @@ export const ThreeMindMap = ({
                 key={node.path}
                 position={node.position}
                 onClick={() => {
-                  const fileNode = files.find(f => f.path === node.path);
-                  if (fileNode) {
-                    setSelectedFile(fileNode);
+                  if (isDir) {
+                    onSelectPath(node.path);
+                    focusRef.current = node.path;
+                  } else {
+                    const fileNode = files.find(f => f.path === node.path);
+                    if (fileNode) {
+                      setSelectedFile(fileNode);
+                    }
                   }
                 }}
                 onPointerOver={() => setHovered(node.path)}
                 onPointerOut={() => setHovered(null)}
               >
                 {/* Different shapes for different file types */}
-                <mesh rotation={isHTML ? [0, Math.PI / 4, Math.PI / 4] : [0, 0, 0]}>
-                  {isHTML ? (
+                <mesh rotation={isHTML ? [0, Math.PI / 4, Math.PI / 4] : isDir ? [0, Math.PI / 4, 0] : [0, 0, 0]}>
+                  {isDir ? (
+                    <octahedronGeometry args={[0.4, 0]} />
+                  ) : isHTML ? (
                     <tetrahedronGeometry args={[0.3, 0]} />
                   ) : isImage ? (
                     <cylinderGeometry args={[0.25, 0.25, 0.15, 8]} />
@@ -284,6 +266,7 @@ export const ThreeMindMap = ({
                   <meshStandardMaterial
                     color={
                       hovered === node.path ? '#e26d5c' :
+                      isDir ? '#3d3428' :
                       isHTML ? '#4a8c7e' :
                       isImage ? '#7d6b9d' :
                       isDoc ? '#b08968' :
@@ -294,13 +277,15 @@ export const ThreeMindMap = ({
                     roughness={0.7}
                   />
                 </mesh>
-                {hovered === node.path && (
-                  <Html position={[0, 0.6, 0]} center style={{ pointerEvents: 'none' }}>
-                    <div className="three-label">
-                      <div className="label-name">{node.name}</div>
-                    </div>
-                  </Html>
-                )}
+                {/* Always show labels */}
+                <Html position={[0, 0.6, 0]} center style={{ pointerEvents: 'none' }}>
+                  <div className="three-label" style={{
+                    background: hovered === node.path ? 'rgba(226, 109, 92, 0.95)' : 'rgba(255, 255, 255, 0.85)',
+                    color: hovered === node.path ? '#fff' : '#141210'
+                  }}>
+                    <div className="label-name">{node.name}</div>
+                  </div>
+                </Html>
               </group>
             );
           })}
