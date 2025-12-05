@@ -33,13 +33,13 @@ export const AuthGate = ({ onLogin }: AuthGateProps) => {
   return (
     <div className="auth-gate">
       <div className="auth-card">
-        <h1>🔐 File Portal</h1>
-        <p className="auth-subtitle">Enter password to access your files</p>
+        <h1>File Atelier</h1>
+        <p className="auth-subtitle">Enter your password to access your files</p>
 
         <form onSubmit={handleSubmit}>
           <input
             type="password"
-            placeholder="Enter password"
+            placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             disabled={isLoading}
@@ -53,11 +53,11 @@ export const AuthGate = ({ onLogin }: AuthGateProps) => {
             className="btn-primary"
             disabled={isLoading || !password}
           >
-            {isLoading ? 'Logging in...' : 'Enter Portal'}
+            {isLoading ? 'Authenticating...' : 'Enter'}
           </button>
         </form>
 
-        <p className="auth-hint">Enter your password to continue.</p>
+        <p className="auth-hint">Secure access to your personal file archive</p>
       </div>
     </div>
   );

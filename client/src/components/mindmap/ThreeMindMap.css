@@ -1,81 +1,108 @@
+/* ============================================
+   THREE MIND MAP - Editorial 3D Atlas
+   ============================================ */
+
 .three-wrapper {
   position: relative;
   width: 100%;
   height: 100%;
-  background: linear-gradient(180deg, #f8f5ed 0%, #f3eee4 100%);
+  background: var(--ivory);
 }
+
+/* ============================================
+   TOP BAR - Clean Navigation
+   ============================================ */
 
 .three-topbar {
   position: absolute;
-  top: 12px;
-  left: 12px;
-  right: 12px;
-  z-index: 5;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
   display: flex;
-  gap: 12px;
+  justify-content: space-between;
   align-items: center;
+  padding: 16px 24px;
+  background: linear-gradient(180deg, var(--ivory) 0%, transparent 100%);
 }
 
 .nav-title {
   font-family: 'Playfair Display', serif;
-  font-size: 14px;
-  letter-spacing: 0.02em;
-  color: #141210;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--black);
   cursor: pointer;
+  transition: color 0.2s ease;
 }
+
+.nav-title:hover {
+  color: var(--accent);
+}
+
+/* ============================================
+   SEARCH - Editorial Style
+   ============================================ */
 
 .search-container {
   position: relative;
-  width: 280px;
+  width: 320px;
 }
 
 .search-input {
   width: 100%;
-  padding: 10px 16px 10px 38px;
+  padding: 10px 16px 10px 40px;
   font-family: 'Manrope', sans-serif;
   font-size: 13px;
-  border: 1px solid #e1d9cc;
-  border-radius: 4px;
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius);
   background: white;
+  color: var(--black);
   outline: none;
   transition: all 0.2s ease;
 }
 
 .search-input:focus {
-  border-color: #14524b;
-  box-shadow: 0 0 0 3px rgba(20, 82, 75, 0.12);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(27, 67, 50, 0.1);
 }
 
 .search-input::placeholder {
-  color: #5a5652;
-  opacity: 0.6;
+  color: var(--muted);
+  opacity: 0.5;
 }
 
 .search-icon {
   position: absolute;
-  left: 12px;
+  left: 14px;
   top: 50%;
   transform: translateY(-50%);
   width: 16px;
   height: 16px;
-  stroke: #5a5652;
+  stroke: var(--muted);
   stroke-width: 2;
-  opacity: 0.5;
+  fill: none;
+  opacity: 0.4;
 }
 
 .search-shortcut {
   position: absolute;
-  right: 10px;
+  right: 12px;
   top: 50%;
   transform: translateY(-50%);
   font-size: 10px;
-  font-weight: 600;
-  color: #5a5652;
-  opacity: 0.5;
+  font-weight: 500;
+  color: var(--muted);
+  opacity: 0.4;
   padding: 2px 6px;
-  border: 1px solid #e1d9cc;
+  border: 1px solid var(--stroke);
   border-radius: 3px;
+  background: var(--ivory);
 }
+
+/* ============================================
+   SEARCH RESULTS DROPDOWN
+   ============================================ */
 
 .search-results {
   position: absolute;
@@ -83,13 +110,13 @@
   left: 0;
   right: 0;
   background: white;
-  border: 1px solid #e1d9cc;
-  border-radius: 0;
-  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.12);
-  max-height: 260px;
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  max-height: 400px;
   overflow-y: auto;
   display: none;
-  z-index: 10;
+  z-index: 200;
 }
 
 .search-results.active {
@@ -99,32 +126,51 @@
 .search-result-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
+  gap: 12px;
+  padding: 12px 16px;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: all 0.15s ease;
+  border-bottom: 1px solid var(--stroke);
+}
+
+.search-result-item:last-child {
+  border-bottom: none;
 }
 
 .search-result-item:hover {
-  background: #f0ece2;
+  background: var(--ivory-dark);
+}
+
+.search-result-item.selected {
+  background: var(--accent);
+  color: var(--ivory);
 }
 
 .result-icon {
-  width: 28px;
-  height: 28px;
-  background: #f3eee4;
-  border-radius: 2px;
+  width: 32px;
+  height: 32px;
+  background: var(--ivory);
+  border-radius: var(--radius);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
 
+.search-result-item.selected .result-icon {
+  background: rgba(255, 255, 255, 0.15);
+}
+
 .result-icon svg {
-  width: 14px;
-  height: 14px;
-  stroke: #5a5652;
+  width: 16px;
+  height: 16px;
+  stroke: var(--muted);
   stroke-width: 1.5;
+  fill: none;
+}
+
+.search-result-item.selected .result-icon svg {
+  stroke: var(--ivory);
 }
 
 .result-info {
@@ -134,39 +180,97 @@
 
 .result-name {
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
+  margin-bottom: 2px;
 }
 
 .result-meta {
   font-size: 11px;
-  color: #5a5652;
+  color: var(--muted);
+  opacity: 0.7;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.search-result-item.selected .result-meta {
+  color: var(--ivory);
+  opacity: 0.7;
 }
 
 .search-empty {
-  padding: 12px 14px;
-  font-size: 12px;
-  color: #5a5652;
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
 }
 
+/* ============================================
+   3D LABELS - Clean & Readable
+   ============================================ */
+
 .three-label {
-  background: rgba(255, 255, 255, 0.9);
-  color: #141210;
-  border: 1px solid #e1d9cc;
-  padding: 6px 10px;
+  background: white;
+  color: var(--black);
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius);
+  padding: 6px 12px;
+  font-family: 'Manrope', sans-serif;
   font-size: 11px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  font-weight: 500;
+  letter-spacing: 0.01em;
   white-space: nowrap;
-  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-md);
+  transition: all 0.2s ease;
+  pointer-events: none;
+}
+
+.three-label .label-name {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .three-label .label-meta {
-  font-size: 10px;
-  color: #5a5652;
+  font-size: 9px;
+  color: var(--muted);
+  margin-top: 2px;
 }
 
 .three-label.root {
-  background: #0e0c0a;
-  color: #f7f4ef;
-  border-color: #0e0c0a;
+  background: var(--black);
+  color: var(--ivory);
+  border-color: var(--black);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 16px;
+}
+
+/* Hover state for labels */
+.three-label.hovered {
+  background: var(--accent);
+  color: var(--ivory);
+  border-color: var(--accent);
+  transform: scale(1.05);
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 768px) {
+  .three-topbar {
+    padding: 12px 16px;
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .search-container {
+    width: 100%;
+  }
+
+  .search-shortcut {
+    display: none;
+  }
 }

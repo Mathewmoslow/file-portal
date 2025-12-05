@@ -1,156 +1,234 @@
+/* ============================================
+   FILE TREE - Editorial Sidebar
+   ============================================ */
+
 .file-tree {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: transparent;
+  background: white;
 }
 
+/* ============================================
+   HEADER
+   ============================================ */
+
 .tree-header {
-  padding: 0.75rem 1rem 0.5rem;
-  background: transparent;
-  display: flex;
-  align-items: baseline;
-  gap: 0.75rem;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--stroke);
 }
 
 .tree-header h3 {
-  margin: 0;
-  font-size: 0.95rem;
-  font-weight: 700;
-  letter-spacing: 0.2px;
-  color: var(--ink);
+  margin: 0 0 8px 0;
+  font-family: 'Manrope', sans-serif;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
+  color: var(--muted);
 }
+
+/* ============================================
+   BREADCRUMB
+   ============================================ */
 
 .tree-breadcrumb {
   display: flex;
   gap: 4px;
   flex-wrap: wrap;
-  font-size: 0.85rem;
+  font-size: 13px;
   color: var(--muted);
 }
 
 .crumb {
   cursor: pointer;
+  transition: color 0.15s ease;
 }
 
 .crumb:hover {
-  color: #0e0c0a;
+  color: var(--accent);
+}
+
+.crumb:last-child {
+  color: var(--black);
+  font-weight: 500;
 }
 
 .crumb-sep {
   margin: 0 2px;
-  color: var(--muted);
+  color: var(--stroke-dark);
+  opacity: 0.6;
 }
+
+/* ============================================
+   CONTENT AREA
+   ============================================ */
 
 .tree-content {
   flex: 1;
   overflow-y: auto;
-  padding: 0.75rem 0 0.5rem;
+  padding: 8px 0;
 }
 
 .tree-content.drop-active {
-  outline: 2px dashed var(--stroke);
-  outline-offset: -6px;
-  background: rgba(14, 12, 10, 0.03);
+  background: rgba(27, 67, 50, 0.03);
+  outline: 2px dashed var(--accent);
+  outline-offset: -8px;
 }
+
+/* ============================================
+   TREE NODES
+   ============================================ */
 
 .tree-node {
   user-select: none;
 }
 
+.tree-node.drop-target .node-content {
+  background: rgba(27, 67, 50, 0.08);
+  border-left: 2px solid var(--accent);
+}
+
 .node-content {
   display: flex;
   align-items: center;
-  padding: 0.55rem 1.1rem;
+  padding: 10px 20px;
   cursor: pointer;
-  transition: background 0.15s, transform 0.15s;
-  gap: 0.5rem;
+  transition: all 0.15s ease;
+  gap: 10px;
+  border-left: 2px solid transparent;
 }
 
 .node-content:hover {
-  background: rgba(14, 12, 10, 0.05);
+  background: var(--ivory-dark);
 }
 
 .node-content.active {
-  background: #0e0c0a;
-  color: #f7f4ef;
-  transform: translateX(4px);
+  background: var(--accent);
+  color: var(--ivory);
+  border-left-color: var(--accent);
 }
 
-.node-content.active .icon-btn {
-  background: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+.node-content.active:hover {
+  background: var(--accent-light);
 }
+
+/* ============================================
+   NODE ELEMENTS
+   ============================================ */
 
 .node-icon {
   display: flex;
   align-items: center;
   color: var(--muted);
+  flex-shrink: 0;
 }
 
 .node-content.active .node-icon {
-  color: #f7f4ef;
+  color: var(--ivory);
+  opacity: 0.85;
 }
 
 .node-name {
   flex: 1;
-  font-size: 0.92rem;
+  font-size: 13px;
+  font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .node-size {
-  font-size: 0.75rem;
+  font-size: 11px;
   color: var(--muted);
+  opacity: 0.6;
 }
 
 .node-content.active .node-size {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--ivory);
+  opacity: 0.7;
 }
+
+/* ============================================
+   ACTION BUTTONS
+   ============================================ */
 
 .node-actions {
   display: flex;
-  gap: 0.25rem;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.node-content:hover .node-actions {
+  opacity: 1;
+}
+
+.node-content.active .node-actions {
+  opacity: 1;
 }
 
 .icon-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  border: none;
-  background: rgba(14, 12, 10, 0.06);
-  color: #0e0c0a;
-  border-radius: 3px;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--stroke);
+  background: white;
+  color: var(--muted);
+  border-radius: var(--radius);
   cursor: pointer;
+  transition: all 0.15s ease;
 }
 
 .icon-btn:hover {
-  background: rgba(14, 12, 10, 0.1);
+  background: var(--ivory-dark);
+  border-color: var(--stroke-dark);
+  color: var(--black);
+}
+
+.node-content.active .icon-btn {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: var(--ivory);
+}
+
+.node-content.active .icon-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
 }
 
 .icon-btn.danger {
-  color: #b91c1c;
-  background: rgba(185, 28, 28, 0.08);
+  color: var(--accent-coral);
 }
 
 .icon-btn.danger:hover {
-  background: rgba(185, 28, 28, 0.15);
+  background: rgba(226, 109, 92, 0.1);
+  border-color: rgba(226, 109, 92, 0.3);
 }
 
-.tree-node.drop-target .node-content {
-  outline: 2px dashed var(--stroke);
-  outline-offset: -2px;
+.node-content.active .icon-btn.danger {
+  color: #ffb4a9;
 }
+
+/* ============================================
+   STATES
+   ============================================ */
 
 .tree-loading,
 .tree-empty {
-  padding: 2rem 1rem;
+  padding: 48px 24px;
   text-align: center;
   color: var(--muted);
-  font-size: 0.9rem;
+  font-size: 13px;
+}
+
+.tree-empty::before {
+  content: '';
+  display: block;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 16px;
+  background: var(--ivory-dark);
+  border-radius: var(--radius-lg);
 }

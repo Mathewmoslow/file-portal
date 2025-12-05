@@ -196,43 +196,44 @@ export const ThreeMindMap = ({
         </div>
       </div>
       <Canvas
-        camera={{ position: [0, 8, 16], fov: 45 }}
+        camera={{ position: [0, 8, 18], fov: 42 }}
         onCreated={({ gl }) => {
-          gl.setClearColor('#f6f2ea');
+          gl.setClearColor('#FAFAF8');
         }}
       >
-        <color attach="background" args={['#f6f2ea']} />
-        <ambientLight intensity={0.6} />
-        <directionalLight position={[5, 10, 5]} intensity={0.8} />
+        <color attach="background" args={['#FAFAF8']} />
+        <ambientLight intensity={0.7} />
+        <directionalLight position={[5, 12, 8]} intensity={0.6} />
+        <directionalLight position={[-5, 8, -5]} intensity={0.3} />
         <Suspense fallback={null}>
-          <gridHelper args={[40, 20, '#d9d2c5', '#e7e0d2']} position={[0, -0.01, 0]} />
+          <gridHelper args={[40, 20, '#E0DDD5', '#ECEAE4']} position={[0, -0.01, 0]} />
 
-          {/* Glass sphere with depth and shading */}
+          {/* Glass sphere with elegant depth */}
           <mesh position={[0, 0, 0]}>
-            <sphereGeometry args={[layout.length > 0 ? 15 - currentPath.split('/').filter(Boolean).length * 2 : 15, 32, 32]} />
+            <sphereGeometry args={[layout.length > 0 ? 15 - currentPath.split('/').filter(Boolean).length * 2 : 15, 48, 48]} />
             <meshPhysicalMaterial
-              color="#e7e0d2"
+              color="#F0EFE9"
               transparent={true}
-              opacity={0.25}
-              metalness={0.1}
-              roughness={0.3}
-              clearcoat={0.8}
-              clearcoatRoughness={0.2}
-              transmission={0.3}
-              thickness={0.5}
-              envMapIntensity={1}
+              opacity={0.2}
+              metalness={0.05}
+              roughness={0.2}
+              clearcoat={1}
+              clearcoatRoughness={0.1}
+              transmission={0.4}
+              thickness={0.8}
+              envMapIntensity={0.8}
               side={2}
             />
           </mesh>
 
-          {/* Wireframe overlay for grid structure */}
+          {/* Refined wireframe overlay - forest green accent */}
           <mesh position={[0, 0, 0]}>
-            <sphereGeometry args={[layout.length > 0 ? 15.1 - currentPath.split('/').filter(Boolean).length * 2 : 15.1, 24, 16]} />
+            <sphereGeometry args={[layout.length > 0 ? 15.1 - currentPath.split('/').filter(Boolean).length * 2 : 15.1, 32, 24]} />
             <meshBasicMaterial
-              color="#b08968"
+              color="#1B4332"
               wireframe={true}
               transparent={true}
-              opacity={0.4}
+              opacity={0.15}
             />
           </mesh>
 
@@ -245,7 +246,7 @@ export const ThreeMindMap = ({
               }}
             >
               <cylinderGeometry args={[1.2, 1.2, 0.4, 32]} />
-              <meshStandardMaterial color="#0e0c0a" />
+              <meshStandardMaterial color="#1A1A1A" metalness={0.1} roughness={0.8} />
             </mesh>
             <Html position={[0, 1.2, 0]} center>
               <div className="three-label root">Root</div>
@@ -295,27 +296,21 @@ export const ThreeMindMap = ({
                   )}
                   <meshStandardMaterial
                     color={
-                      hovered === node.path ? '#e26d5c' :
-                      isDir ? '#3d3428' :
-                      isHTML ? '#4a8c7e' :
-                      isImage ? '#7d6b9d' :
-                      isDoc ? '#b08968' :
-                      isCode ? '#6b8e9d' :
-                      '#5a5652'
+                      hovered === node.path ? '#2D6A4F' :
+                      isDir ? '#1A1A1A' :
+                      isHTML ? '#1B4332' :
+                      isImage ? '#6B5B7A' :
+                      isDoc ? '#8B7355' :
+                      isCode ? '#2D6A4F' :
+                      '#5A5652'
                     }
-                    metalness={0.2}
-                    roughness={0.7}
+                    metalness={0.15}
+                    roughness={0.6}
                   />
                 </mesh>
                 {/* Always show labels */}
-                <Html position={[0, 0.6, 0]} center style={{ pointerEvents: 'none' }} zIndexRange={[0, 0]}>
-                  <div className="three-label" style={{
-                    background: hovered === node.path ? 'rgba(226, 109, 92, 0.95)' : 'rgba(255, 255, 255, 0.85)',
-                    color: hovered === node.path ? '#fff' : '#141210',
-                    fontSize: '9px',
-                    padding: '2px 6px',
-                    opacity: 0.8
-                  }}>
+                <Html position={[0, 0.7, 0]} center style={{ pointerEvents: 'none' }} zIndexRange={[0, 0]}>
+                  <div className={`three-label ${hovered === node.path ? 'hovered' : ''}`}>
                     <div className="label-name">{node.name}</div>
                   </div>
                 </Html>
