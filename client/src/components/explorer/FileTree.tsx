@@ -4,7 +4,11 @@ import type { FileNode } from '../../types';
 import { File, Folder, Trash2, Edit3, ExternalLink } from 'lucide-react';
 import './FileTree.css';
 
-export const FileTree = () => {
+interface FileTreeProps {
+  onFileOpen?: () => void;
+}
+
+export const FileTree = ({ onFileOpen }: FileTreeProps) => {
   const {
     fileTree,
     loadFileTree,
@@ -34,6 +38,7 @@ export const FileTree = () => {
   const handleFileClick = (node: FileNode) => {
     if (node.type === 'file') {
       openFile(node.path);
+      onFileOpen?.();
     } else {
       navigateTo(node.path);
     }

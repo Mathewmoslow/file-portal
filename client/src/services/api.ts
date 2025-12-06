@@ -116,6 +116,24 @@ class ApiService {
     await this.client.post('/files/rename', { from, to });
   }
 
+  async generateShareLink(path: string, expiresIn: string = '7d'): Promise<{ shareUrl: string; expiresIn: string }> {
+    const response = await this.client.post<{
+      success: boolean;
+      shareUrl: string;
+      expiresIn: string;
+      error?: { message: string };
+    }>('/files/share', { path, expiresIn });
+
+    if (!response.data.success || !response.data.shareUrl) {
+      throw new Error(response.data.error?.message || 'Failed to generate share link');
+    }
+
+    return {
+      shareUrl: response.data.shareUrl,
+      expiresIn: response.data.expiresIn
+    };
+  }
+
   isAuthenticated(): boolean {
     return this.token !== null;
   }

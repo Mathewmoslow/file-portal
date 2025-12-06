@@ -13,6 +13,10 @@
       "dest": "/api/$1"
     },
     {
+      "src": "^/(?!_next|assets|favicon)(.+\\.(html|htm|pdf|txt|md|json|xml|css|js|png|jpg|jpeg|gif|svg|webp|ico|mp3|mp4|wav|webm|woff|woff2|ttf|eot|zip|tar|gz))$",
+      "dest": "/api/serve/$1"
+    },
+    {
       "src": "/(.*)",
       "dest": "/index.html"
     }

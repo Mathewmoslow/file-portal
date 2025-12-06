@@ -189,7 +189,7 @@ const [newItemModal, setNewItemModal] = useState<{ open: boolean; type: 'file' |
         {!sidebarCollapsed && (
           <>
             <aside className="sidebar" style={{ width: sidebarWidth }}>
-              <FileTree />
+              <FileTree onFileOpen={() => setView('editor')} />
             </aside>
             <div
               className={`resizer ${isResizing ? 'dragging' : ''}`}

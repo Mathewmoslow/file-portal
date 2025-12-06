@@ -1,11 +1,14 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Editor from '@monaco-editor/react';
 import { useFileStore } from '../../store/fileStore';
-import { Save, X, ExternalLink } from 'lucide-react';
+import { api } from '../../services/api';
+import { Save, X, ExternalLink, Share2, Copy, Check } from 'lucide-react';
 import './CodeEditor.css';
 
 export const CodeEditor = () => {
   const previewBase = import.meta.env.VITE_PREVIEW_BASE_URL || 'https://files.mathewmoslow.com';
+  const [shareModal, setShareModal] = useState<{ open: boolean; url?: string; loading?: boolean; error?: string }>({ open: false });
+  const [copied, setCopied] = useState(false);
   const {
     activeFile,
     openFiles,
@@ -36,6 +39,36 @@ export const CodeEditor = () => {
     if (!activeFile) return;
     const url = `${previewBase}${activeFile}`;
     window.open(url, '_blank');
+  };
+
+  const handleShare = async (expiresIn: string = '7d') => {
+    if (!activeFile) return;
+    setShareModal({ open: true, loading: true });
+    try {
+      const result = await api.generateShareLink(activeFile, expiresIn);
+      setShareModal({ open: true, url: result.shareUrl });
+    } catch (err: any) {
+      setShareModal({ open: true, error: err.message || 'Failed to generate share link' });
+    }
+  };
+
+  const handleCopyShareUrl = async () => {
+    if (!shareModal.url) return;
+    try {
+      await navigator.clipboard.writeText(shareModal.url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback for older browsers
+      const textarea = document.createElement('textarea');
+      textarea.value = shareModal.url;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   const getLanguage = (filename: string) => {
@@ -171,10 +204,16 @@ export const CodeEditor = () => {
           <span className="toolbar-status">Binary file (preview only)</span>
         )}
         {activeFile && (
-          <button className="toolbar-btn secondary" onClick={handlePreview} title="Open preview">
-            <ExternalLink size={16} />
-            <span>Preview</span>
-          </button>
+          <>
+            <button className="toolbar-btn secondary" onClick={handlePreview} title="Open preview">
+              <ExternalLink size={16} />
+              <span>Preview</span>
+            </button>
+            <button className="toolbar-btn secondary" onClick={() => handleShare('7d')} title="Generate share link">
+              <Share2 size={16} />
+              <span>Share</span>
+            </button>
+          </>
         )}
       </div>
 
@@ -198,6 +237,43 @@ export const CodeEditor = () => {
         )}
         {activeFile && currentFile?.isBinary && renderBinaryPreview()}
       </div>
+
+      {shareModal.open && (
+        <div className="share-modal-backdrop" onClick={() => setShareModal({ open: false })}>
+          <div className="share-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Share File</h3>
+            {shareModal.loading && <p className="share-loading">Generating link...</p>}
+            {shareModal.error && <p className="share-error">{shareModal.error}</p>}
+            {shareModal.url && (
+              <>
+                <p className="share-info">Link expires in 7 days</p>
+                <div className="share-url-container">
+                  <input
+                    type="text"
+                    readOnly
+                    value={shareModal.url}
+                    className="share-url-input"
+                  />
+                  <button className="share-copy-btn" onClick={handleCopyShareUrl}>
+                    {copied ? <Check size={16} /> : <Copy size={16} />}
+                    {copied ? 'Copied!' : 'Copy'}
+                  </button>
+                </div>
+                <div className="share-expiry-options">
+                  <span>Change expiration:</span>
+                  <button onClick={() => handleShare('1h')}>1 hour</button>
+                  <button onClick={() => handleShare('24h')}>24 hours</button>
+                  <button onClick={() => handleShare('7d')}>7 days</button>
+                  <button onClick={() => handleShare('30d')}>30 days</button>
+                </div>
+              </>
+            )}
+            <button className="share-close-btn" onClick={() => setShareModal({ open: false })}>
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
