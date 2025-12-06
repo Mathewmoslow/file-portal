@@ -136,7 +136,7 @@ const [newItemModal, setNewItemModal] = useState<{ open: boolean; type: 'file' |
     <div className="app" ref={appRef}>
       <header className="app-header">
         <div className="header-left">
-          <h1 onClick={() => loadFileTree('/')}>File Atelier</h1>
+          <img src="/logo.png" alt="Atelier Moslow" className="header-logo" onClick={() => loadFileTree('/')} />
           <div className="header-meta">{currentPath || '/'}</div>
         </div>
         <div className="header-actions">

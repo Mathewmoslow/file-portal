@@ -24,18 +24,15 @@
   min-height: 57px;
 }
 
-.header-left h1 {
-  font-family: 'Playfair Display', serif;
-  font-size: 18px;
-  font-weight: 500;
-  letter-spacing: -0.02em;
-  color: var(--black);
+.header-logo {
+  height: 36px;
+  width: auto;
   cursor: pointer;
-  transition: color 0.2s ease;
+  transition: opacity 0.2s ease;
 }
 
-.header-left h1:hover {
-  color: var(--accent);
+.header-logo:hover {
+  opacity: 0.8;
 }
 
 .header-meta {

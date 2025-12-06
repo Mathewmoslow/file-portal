@@ -33,8 +33,7 @@ export const AuthGate = ({ onLogin }: AuthGateProps) => {
   return (
     <div className="auth-gate">
       <div className="auth-card">
-        <h1>File Atelier</h1>
-        <p className="auth-subtitle">Enter your password to access your files</p>
+        <img src="/logo.png" alt="Atelier Moslow" className="auth-logo" />
 
         <form onSubmit={handleSubmit}>
           <input
@@ -56,8 +55,6 @@ export const AuthGate = ({ onLogin }: AuthGateProps) => {
             {isLoading ? 'Authenticating...' : 'Enter'}
           </button>
         </form>
-
-        <p className="auth-hint">Secure access to your personal file archive</p>
       </div>
     </div>
   );
