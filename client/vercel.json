@@ -4,21 +4,74 @@
   "outputDirectory": "dist",
   "installCommand": "npm install",
   "devCommand": "npm run dev",
-  "routes": [
+  "rewrites": [
     {
-      "handle": "filesystem"
+      "source": "/:path*.html",
+      "destination": "/api/serve/:path*.html"
     },
     {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
+      "source": "/:path*.htm",
+      "destination": "/api/serve/:path*.htm"
     },
     {
-      "src": "^/(?!_next|assets|favicon)(.+\\.(html|htm|pdf|txt|md|json|xml|css|js|png|jpg|jpeg|gif|svg|webp|ico|mp3|mp4|wav|webm|woff|woff2|ttf|eot|zip|tar|gz))$",
-      "dest": "/api/serve/$1"
+      "source": "/:path*.pdf",
+      "destination": "/api/serve/:path*.pdf"
     },
     {
-      "src": "/(.*)",
-      "dest": "/index.html"
+      "source": "/:path*.txt",
+      "destination": "/api/serve/:path*.txt"
+    },
+    {
+      "source": "/:path*.md",
+      "destination": "/api/serve/:path*.md"
+    },
+    {
+      "source": "/:path*.png",
+      "destination": "/api/serve/:path*.png"
+    },
+    {
+      "source": "/:path*.jpg",
+      "destination": "/api/serve/:path*.jpg"
+    },
+    {
+      "source": "/:path*.jpeg",
+      "destination": "/api/serve/:path*.jpeg"
+    },
+    {
+      "source": "/:path*.gif",
+      "destination": "/api/serve/:path*.gif"
+    },
+    {
+      "source": "/:path*.svg",
+      "destination": "/api/serve/:path*.svg"
+    },
+    {
+      "source": "/:path*.css",
+      "destination": "/api/serve/:path*.css"
+    },
+    {
+      "source": "/:path*.js",
+      "destination": "/api/serve/:path*.js"
+    },
+    {
+      "source": "/:path*.json",
+      "destination": "/api/serve/:path*.json"
+    },
+    {
+      "source": "/:path*.xml",
+      "destination": "/api/serve/:path*.xml"
+    },
+    {
+      "source": "/:path*.mp3",
+      "destination": "/api/serve/:path*.mp3"
+    },
+    {
+      "source": "/:path*.mp4",
+      "destination": "/api/serve/:path*.mp4"
+    },
+    {
+      "source": "/:path*.zip",
+      "destination": "/api/serve/:path*.zip"
     }
   ]
 }
