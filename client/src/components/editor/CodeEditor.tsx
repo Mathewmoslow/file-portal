@@ -7,7 +7,7 @@ import './CodeEditor.css';
 
 export const CodeEditor = () => {
   const previewBase = import.meta.env.VITE_PREVIEW_BASE_URL || 'https://files.mathewmoslow.com';
-  const [shareModal, setShareModal] = useState<{ open: boolean; url?: string; loading?: boolean; error?: string }>({ open: false });
+  const [shareModal, setShareModal] = useState<{ open: boolean; url?: string; loading?: boolean; error?: string; expiresIn?: string }>({ open: false });
   const [copied, setCopied] = useState(false);
   const {
     activeFile,
@@ -46,10 +46,20 @@ export const CodeEditor = () => {
     setShareModal({ open: true, loading: true });
     try {
       const result = await api.generateShareLink(activeFile, expiresIn);
-      setShareModal({ open: true, url: result.shareUrl });
+      setShareModal({ open: true, url: result.shareUrl, expiresIn: result.expiresIn });
     } catch (err: any) {
       setShareModal({ open: true, error: err.message || 'Failed to generate share link' });
     }
+  };
+
+  const formatExpiration = (exp: string) => {
+    const map: Record<string, string> = {
+      '1h': '1 hour',
+      '24h': '24 hours',
+      '7d': '7 days',
+      '30d': '30 days'
+    };
+    return map[exp] || exp;
   };
 
   const handleCopyShareUrl = async () => {
@@ -246,7 +256,7 @@ export const CodeEditor = () => {
             {shareModal.error && <p className="share-error">{shareModal.error}</p>}
             {shareModal.url && (
               <>
-                <p className="share-info">Link expires in 7 days</p>
+                <p className="share-info">Link expires in {formatExpiration(shareModal.expiresIn || '7d')}</p>
                 <div className="share-url-container">
                   <input
                     type="text"
