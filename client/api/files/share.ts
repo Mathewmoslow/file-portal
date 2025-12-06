@@ -67,12 +67,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Generate share token
     const token = CryptoService.generateShareToken(normalized, expiration);
 
-    // Build the share URL
+    // Build the share URL - use /api/serve/ path directly
     const baseUrl = process.env.VERCEL_URL
       ? `https://${process.env.VERCEL_URL}`
       : process.env.BASE_URL || 'https://files.mathewmoslow.com';
 
-    const shareUrl = `${baseUrl}${normalized}?token=${token}`;
+    const shareUrl = `${baseUrl}/api/serve${normalized}?token=${token}`;
 
     return res.status(200).json({
       success: true,
