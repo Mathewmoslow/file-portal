@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useFileStore } from '../../store/fileStore';
+import { api } from '../../services/api';
 import type { FileNode } from '../../types';
 import { File, Folder, Trash2, Edit3, ExternalLink } from 'lucide-react';
 import './FileTree.css';
@@ -325,10 +326,17 @@ export const FileTree = ({ onFileOpen }: FileTreeProps) => {
     await deleteFile(node.path, node.type === 'directory');
   };
 
-  const handlePreview = (node: FileNode) => {
+  const handlePreview = async (node: FileNode) => {
     if (node.type !== 'file') return;
-    const url = `${previewBase}${node.path}`;
-    window.open(url, '_blank');
+    try {
+      // Generate a short-lived token for preview
+      const result = await api.generateShareLink(node.path, '1h');
+      window.open(result.shareUrl, '_blank');
+    } catch (err) {
+      // Fallback to direct link if token generation fails
+      const url = `${previewBase}${node.path}`;
+      window.open(url, '_blank');
+    }
   };
 
   const parentPath = () => {

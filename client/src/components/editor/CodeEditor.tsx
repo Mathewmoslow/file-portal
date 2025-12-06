@@ -35,10 +35,17 @@ export const CodeEditor = () => {
     }
   };
 
-  const handlePreview = () => {
+  const handlePreview = async () => {
     if (!activeFile) return;
-    const url = `${previewBase}${activeFile}`;
-    window.open(url, '_blank');
+    try {
+      // Generate a short-lived token for preview
+      const result = await api.generateShareLink(activeFile, '1h');
+      window.open(result.shareUrl, '_blank');
+    } catch (err) {
+      // Fallback to direct link if token generation fails
+      const url = `${previewBase}${activeFile}`;
+      window.open(url, '_blank');
+    }
   };
 
   const handleShare = async (expiresIn: string = '7d') => {
@@ -139,14 +146,12 @@ export const CodeEditor = () => {
       <div className="binary-preview">
         <div className="binary-toolbar">
           <span>Preview only (binary file)</span>
-          <a
+          <button
             className="toolbar-btn"
-            href={url || `https://files.mathewmoslow.com${currentFile.path}`}
-            target="_blank"
-            rel="noreferrer"
+            onClick={handlePreview}
           >
             Open in new tab
-          </a>
+          </button>
         </div>
         <div className="binary-content">
           {isImage && url && <img src={url} alt={currentFile.name} style={{ maxWidth: '100%' }} />}
