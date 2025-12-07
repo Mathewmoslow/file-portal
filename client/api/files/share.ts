@@ -67,10 +67,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Generate share token
     const token = CryptoService.generateShareToken(normalized, expiration);
 
-    // Build the share URL - always use production domain for share links
+    // Build the share URL - use query parameter format
     const baseUrl = process.env.BASE_URL || 'https://files.mathewmoslow.com';
 
-    const shareUrl = `${baseUrl}/api/serve${normalized}?token=${token}`;
+    const shareUrl = `${baseUrl}/api/serve?path=${encodeURIComponent(normalized)}&token=${token}`;
 
     return res.status(200).json({
       success: true,
