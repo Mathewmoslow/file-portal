@@ -196,7 +196,10 @@ export const ThreeMindMap = ({
         </div>
       </div>
       <Canvas
-        camera={{ position: [0, 8, 18], fov: 42 }}
+        camera={{
+          position: [0, layout.length > 30 ? 35 : layout.length > 15 ? 28 : 22, layout.length > 30 ? 40 : layout.length > 15 ? 32 : 25],
+          fov: 50
+        }}
         onCreated={({ gl }) => {
           gl.setClearColor('#FAFAF8');
         }}
@@ -248,7 +251,7 @@ export const ThreeMindMap = ({
               <cylinderGeometry args={[1.2, 1.2, 0.4, 32]} />
               <meshStandardMaterial color="#1A1A1A" metalness={0.1} roughness={0.8} />
             </mesh>
-            <Html position={[0, 1.2, 0]} center>
+            <Html position={[0, 1.2, 0]} center zIndexRange={[0, 0]}>
               <div className="three-label root">Root</div>
             </Html>
           </group>
@@ -260,6 +263,8 @@ export const ThreeMindMap = ({
             const isImage = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'].includes(ext);
             const isDoc = ['pdf', 'doc', 'docx', 'txt', 'md'].includes(ext);
             const isCode = ['js', 'ts', 'tsx', 'jsx', 'py', 'css', 'json'].includes(ext);
+            const showLabel = layout.length <= 15 || hovered === node.path;
+            const stemHeight = 1.8;
 
             return (
               <group
@@ -308,12 +313,21 @@ export const ThreeMindMap = ({
                     roughness={0.6}
                   />
                 </mesh>
-                {/* Always show labels */}
-                <Html position={[0, 0.7, 0]} center style={{ pointerEvents: 'none' }} zIndexRange={[0, 0]}>
-                  <div className={`three-label ${hovered === node.path ? 'hovered' : ''}`}>
-                    <div className="label-name">{node.name}</div>
-                  </div>
-                </Html>
+                {/* Stem line extending outward from shape */}
+                {showLabel && (
+                  <mesh position={[0, stemHeight / 2 + 0.3, 0]}>
+                    <cylinderGeometry args={[0.02, 0.02, stemHeight, 6]} />
+                    <meshBasicMaterial color={hovered === node.path ? '#2D6A4F' : '#999'} />
+                  </mesh>
+                )}
+                {/* Label at end of stem - only show on hover when many files */}
+                {showLabel && (
+                  <Html position={[0, stemHeight + 0.8, 0]} center style={{ pointerEvents: 'none' }} zIndexRange={[0, 0]}>
+                    <div className={`three-label ${hovered === node.path ? 'hovered' : ''}`}>
+                      <div className="label-name">{node.name}</div>
+                    </div>
+                  </Html>
+                )}
               </group>
             );
           })}
