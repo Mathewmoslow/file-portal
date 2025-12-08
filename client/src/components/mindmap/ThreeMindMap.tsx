@@ -193,9 +193,6 @@ export const ThreeMindMap = ({
   return (
     <div className="three-wrapper">
       <div className="three-topbar">
-        <div className="nav-title" onClick={() => onSelectPath('/')}>
-          File Atelier · {currentPath || '/'}
-        </div>
         <div className="search-container">
           <svg className="search-icon" viewBox="0 0 24 24" fill="none">
             <circle cx="11" cy="11" r="8" />
