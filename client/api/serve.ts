@@ -33,6 +33,30 @@ function getMimeType(filePath: string): string {
 }
 
 /**
+ * Rewrite relative URLs in HTML to use the serve endpoint
+ */
+function rewriteHtmlUrls(html: string, basePath: string, token: string): string {
+  const baseDir = path.posix.dirname(basePath);
+
+  // Rewrite src and href attributes that are relative paths
+  return html.replace(
+    /(src|href)=["'](?!https?:\/\/|\/\/|data:|#|mailto:|javascript:)([^"']+)["']/gi,
+    (match, attr, url) => {
+      // Skip absolute paths and anchors
+      if (url.startsWith('/') || url.startsWith('#')) {
+        return match;
+      }
+
+      // Resolve relative path
+      const resolvedPath = path.posix.normalize(`${baseDir}/${url}`);
+      const serveUrl = `/api/serve?path=${encodeURIComponent(resolvedPath)}&token=${token}`;
+
+      return `${attr}="${serveUrl}"`;
+    }
+  );
+}
+
+/**
  * File serving endpoint
  * GET /api/serve?path=/folder/file.html&token=SHARE_TOKEN
  */
@@ -67,13 +91,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Check authorization
     const shareToken = req.query.token as string | undefined;
     let authorized = false;
+    let tokenBasePath: string | null = null;
 
     if (shareToken) {
       const shareData = CryptoService.verifyShareToken(shareToken);
       if (shareData) {
         const tokenPath = path.posix.normalize(shareData.path);
-        if (tokenPath === normalized) {
+        const tokenDir = path.posix.dirname(tokenPath);
+        const requestDir = path.posix.dirname(normalized);
+
+        // Allow access if:
+        // 1. Exact path match, OR
+        // 2. Same directory (for relative assets like images/css/js)
+        if (tokenPath === normalized || tokenDir === requestDir) {
           authorized = true;
+          tokenBasePath = tokenPath;
         }
       }
     }
@@ -90,6 +122,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Read and serve file
     const buffer = await readFileBuffer(normalized);
     const mimeType = getMimeType(normalized);
+
+    // For HTML files with a share token, rewrite relative URLs
+    if (shareToken && (mimeType === 'text/html') && tokenBasePath) {
+      const html = buffer.toString('utf-8');
+      const rewrittenHtml = rewriteHtmlUrls(html, normalized, shareToken);
+
+      res.setHeader('Content-Type', mimeType);
+      res.setHeader('Content-Length', Buffer.byteLength(rewrittenHtml));
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+
+      return res.status(200).send(rewrittenHtml);
+    }
 
     res.setHeader('Content-Type', mimeType);
     res.setHeader('Content-Length', buffer.length);
