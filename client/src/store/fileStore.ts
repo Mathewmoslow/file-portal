@@ -138,10 +138,9 @@ export const useFileStore = create<FileStore>((set, get) => ({
   createFile: async (path: string, content = '') => {
     set({ isLoading: true, error: null });
     try {
-      const base = get().currentPath || '/';
-      const targetPath = normalizePath(base, path);
-      await api.createFile(targetPath, content);
-      await get().loadFileTree(base);
+      // Path is already normalized by caller, use as-is
+      await api.createFile(path, content);
+      await get().loadFileTree(get().currentPath || '/');
       set({ isLoading: false });
     } catch (error: any) {
       set({ error: error.message, isLoading: false });
@@ -151,10 +150,9 @@ export const useFileStore = create<FileStore>((set, get) => ({
   uploadFile: async (path: string, base64: string) => {
     set({ isLoading: true, error: null });
     try {
-      const base = get().currentPath || '/';
-      const targetPath = normalizePath(base, path);
-      await api.uploadBase64(targetPath, base64);
-      await get().loadFileTree(base);
+      // Path is already normalized by caller, use as-is
+      await api.uploadBase64(path, base64);
+      await get().loadFileTree(get().currentPath || '/');
       set({ isLoading: false });
     } catch (error: any) {
       set({ error: error.message, isLoading: false });
@@ -176,10 +174,9 @@ export const useFileStore = create<FileStore>((set, get) => ({
   createDirectory: async (path: string) => {
     set({ isLoading: true, error: null });
     try {
-      const base = get().currentPath || '/';
-      const targetPath = normalizePath(base, path);
-      await api.createDirectory(targetPath);
-      await get().loadFileTree(base);
+      // Path is already normalized by caller, use as-is
+      await api.createDirectory(path);
+      await get().loadFileTree(get().currentPath || '/');
       set({ isLoading: false });
     } catch (error: any) {
       set({ error: error.message, isLoading: false });

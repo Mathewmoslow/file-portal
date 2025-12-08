@@ -255,6 +255,55 @@
 }
 
 /* ============================================
+   FLAG-STYLE LABELS WITH LETTER
+   ============================================ */
+
+.three-label-flag {
+  display: flex;
+  align-items: stretch;
+  background: white;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  font-family: 'Manrope', sans-serif;
+  white-space: nowrap;
+  pointer-events: none;
+  transition: all 0.2s ease;
+}
+
+.three-label-flag .flag-letter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  min-width: 28px;
+  padding: 6px 0;
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.three-label-flag .flag-name {
+  padding: 6px 12px 6px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--black);
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.three-label-flag.hovered {
+  transform: scale(1.05);
+  box-shadow: var(--shadow-lg);
+}
+
+.three-label-flag.hovered .flag-name {
+  font-weight: 600;
+}
+
+/* ============================================
    ALPHABET LEGEND
    ============================================ */
 

@@ -25,13 +25,13 @@ const isWebGLAvailable = () => {
   }
 };
 
-// Alphabetical color bands - elegant palette
+// Alphabetical color bands - highly distinct colors
 const ALPHA_BANDS = [
-  { range: 'A–E', letters: 'ABCDE', color: '#1B4332', lightColor: '#2D6A4F' },  // Emerald
-  { range: 'F–J', letters: 'FGHIJ', color: '#1D4E5F', lightColor: '#2A7A8C' },  // Teal
-  { range: 'K–O', letters: 'KLMNO', color: '#7B5E2D', lightColor: '#A67C3D' },  // Amber
-  { range: 'P–T', letters: 'PQRST', color: '#6B3A5B', lightColor: '#8B4A7A' },  // Burgundy
-  { range: 'U–Z', letters: 'UVWXYZ', color: '#4A4E69', lightColor: '#6B7094' }, // Slate
+  { range: 'A–E', letters: 'ABCDE', color: '#1B7340', lightColor: '#22A858' },  // Vivid Green
+  { range: 'F–J', letters: 'FGHIJ', color: '#2563EB', lightColor: '#3B82F6' },  // Bright Blue
+  { range: 'K–O', letters: 'KLMNO', color: '#D97706', lightColor: '#F59E0B' },  // Orange/Amber
+  { range: 'P–T', letters: 'PQRST', color: '#DC2626', lightColor: '#EF4444' },  // Red
+  { range: 'U–Z', letters: 'UVWXYZ', color: '#7C3AED', lightColor: '#8B5CF6' }, // Purple
 ];
 
 const getAlphaBand = (name: string) => {
@@ -308,17 +308,13 @@ export const ThreeMindMap = ({
 
           {layout.map((node) => {
             const isDir = node.type === 'directory';
-            const ext = node.name.split('.').pop()?.toLowerCase() || '';
-            const isHTML = ext === 'html' || ext === 'htm';
-            const isImage = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'].includes(ext);
-            const isDoc = ['pdf', 'doc', 'docx', 'txt', 'md'].includes(ext);
-            const isCode = ['js', 'ts', 'tsx', 'jsx', 'py', 'css', 'json'].includes(ext);
             const showLabel = layout.length <= 15 || hovered === node.path;
-            const stemHeight = 1.8;
+            const stemHeight = 1.5;
+            const firstLetter = node.name.charAt(0).toUpperCase();
 
             // Use alphabetical band color, with directory override
             const baseColor = isDir ? '#1A1A1A' : node.alphaBand.color;
-            const hoverColor = isDir ? '#333' : node.alphaBand.lightColor;
+            const hoverColor = isDir ? '#444' : node.alphaBand.lightColor;
 
             return (
               <group
@@ -338,42 +334,30 @@ export const ThreeMindMap = ({
                 onPointerOver={() => setHovered(node.path)}
                 onPointerOut={() => setHovered(null)}
               >
-                {/* Different shapes for different file types */}
-                <mesh rotation={isHTML ? [0, Math.PI / 4, Math.PI / 4] : isDir ? [0, Math.PI / 4, 0] : [0, 0, 0]}>
-                  {isDir ? (
-                    <octahedronGeometry args={[0.7, 0]} />
-                  ) : isHTML ? (
-                    <tetrahedronGeometry args={[0.55, 0]} />
-                  ) : isImage ? (
-                    <cylinderGeometry args={[0.45, 0.45, 0.3, 8]} />
-                  ) : isDoc ? (
-                    <boxGeometry args={[0.55, 0.65, 0.1]} />
-                  ) : isCode ? (
-                    <icosahedronGeometry args={[0.45, 0]} />
-                  ) : (
-                    <sphereGeometry args={[0.4, 8, 8]} />
-                  )}
+                {/* Simple elegant dots - directories slightly larger */}
+                <mesh>
+                  <sphereGeometry args={[isDir ? 0.4 : 0.25, 16, 16]} />
                   <meshStandardMaterial
                     color={hovered === node.path ? hoverColor : baseColor}
-                    metalness={0.2}
-                    roughness={0.5}
+                    metalness={0.3}
+                    roughness={0.4}
+                    emissive={hovered === node.path ? hoverColor : '#000'}
+                    emissiveIntensity={hovered === node.path ? 0.3 : 0}
                   />
                 </mesh>
                 {/* Stem line extending outward from shape */}
                 {showLabel && (
-                  <mesh position={[0, stemHeight / 2 + 0.3, 0]}>
-                    <cylinderGeometry args={[0.02, 0.02, stemHeight, 6]} />
-                    <meshBasicMaterial color={hovered === node.path ? hoverColor : '#AAA'} />
+                  <mesh position={[0, stemHeight / 2 + 0.2, 0]}>
+                    <cylinderGeometry args={[0.015, 0.015, stemHeight, 6]} />
+                    <meshBasicMaterial color={hovered === node.path ? baseColor : '#BBB'} />
                   </mesh>
                 )}
-                {/* Label at end of stem - only show on hover when many files */}
+                {/* Label with letter indicator */}
                 {showLabel && (
-                  <Html position={[0, stemHeight + 0.8, 0]} center style={{ pointerEvents: 'none' }} zIndexRange={[0, 0]}>
-                    <div
-                      className={`three-label ${hovered === node.path ? 'hovered' : ''}`}
-                      style={{ borderLeftColor: node.alphaBand.color, borderLeftWidth: 3 }}
-                    >
-                      <div className="label-name">{node.name}</div>
+                  <Html position={[0, stemHeight + 0.6, 0]} center style={{ pointerEvents: 'none' }} zIndexRange={[0, 0]}>
+                    <div className={`three-label-flag ${hovered === node.path ? 'hovered' : ''}`}>
+                      <span className="flag-letter" style={{ background: node.alphaBand.color }}>{firstLetter}</span>
+                      <span className="flag-name">{node.name}</span>
                     </div>
                   </Html>
                 )}
