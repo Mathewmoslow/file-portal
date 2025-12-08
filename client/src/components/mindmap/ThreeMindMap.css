@@ -255,6 +255,46 @@
 }
 
 /* ============================================
+   ALPHABET LEGEND
+   ============================================ */
+
+.alpha-legend {
+  position: absolute;
+  bottom: 24px;
+  left: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: white;
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  box-shadow: var(--shadow-md);
+  z-index: 10;
+}
+
+.alpha-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.alpha-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.alpha-range {
+  font-family: 'Manrope', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--black);
+}
+
+/* ============================================
    RESPONSIVE
    ============================================ */
 
@@ -272,5 +312,21 @@
 
   .search-shortcut {
     display: none;
+  }
+
+  .alpha-legend {
+    bottom: 12px;
+    left: 12px;
+    padding: 8px 12px;
+    gap: 4px;
+  }
+
+  .alpha-dot {
+    width: 10px;
+    height: 10px;
+  }
+
+  .alpha-range {
+    font-size: 10px;
   }
 }
