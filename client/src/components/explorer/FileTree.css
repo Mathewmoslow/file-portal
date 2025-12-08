@@ -10,12 +10,51 @@
 }
 
 /* ============================================
+   BRANDING SECTION
+   ============================================ */
+
+.tree-branding {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid var(--stroke);
+  background: white;
+}
+
+.tree-logo {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.tree-brand-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--black);
+}
+
+.tree-path-hint {
+  font-size: 11px;
+  color: var(--muted);
+  margin-left: auto;
+  opacity: 0.7;
+}
+
+/* ============================================
    HEADER
    ============================================ */
 
 .tree-header {
   padding: 16px 20px 12px;
   border-bottom: 1px solid var(--stroke);
+  background: var(--ivory);
+  position: relative;
+  z-index: 2;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .tree-header h3 {
@@ -96,7 +135,8 @@
   cursor: pointer;
   transition: all 0.15s ease;
   gap: 10px;
-  border-left: 2px solid transparent;
+  border-left: 3px solid transparent;
+  margin: 0;
 }
 
 .node-content:hover {
@@ -107,6 +147,7 @@
   background: var(--accent);
   color: var(--ivory);
   border-left-color: var(--accent);
+  border-radius: 0;
 }
 
 .node-content.active:hover {

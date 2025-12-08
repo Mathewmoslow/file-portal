@@ -354,6 +354,11 @@ export const FileTree = ({ onFileOpen }: FileTreeProps) => {
 
   return (
     <div className="file-tree">
+      <div className="tree-branding">
+        <img src="/logo.png" alt="Atelier Moslow" className="tree-logo" />
+        <span className="tree-brand-name">Atelier Moslow</span>
+        <span className="tree-path-hint">• {currentPath || '/'}</span>
+      </div>
       <div className="tree-header">
         <h3>Files</h3>
         <div className="tree-breadcrumb">
