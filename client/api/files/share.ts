@@ -11,7 +11,7 @@ import { existsPath } from '../_lib/sftp.js';
  * POST /api/files/share
  * Body: { path: string, expiresIn?: string }
  *
- * expiresIn options: '1h', '24h', '7d', '30d' (default: '7d')
+ * expiresIn options: '1h', '24h', '7d', '30d', 'never' (default: '7d')
  *
  * Returns: { success: true, shareUrl: string, expiresIn: string }
  */
@@ -43,7 +43,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Validate expiration option
-    const validExpirations = ['1h', '24h', '7d', '30d'];
+    const validExpirations = ['1h', '24h', '7d', '30d', 'never'];
     const expiration = validExpirations.includes(expiresIn) ? expiresIn : '7d';
 
     // Normalize and validate path

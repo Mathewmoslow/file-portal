@@ -26,14 +26,17 @@ export class CryptoService {
   /**
    * Generate a share token for a specific file path
    * @param filePath - The file path to share
-   * @param expiresIn - Expiration time (e.g., '1h', '7d', '30d')
+   * @param expiresIn - Expiration time (e.g., '1h', '7d', '30d', 'never')
    */
   static generateShareToken(filePath: string, expiresIn: string = '7d'): string {
-    return jwt.sign(
-      { type: 'share', path: filePath, created: Date.now() },
-      JWT_SECRET,
-      { expiresIn }
-    );
+    const payload = { type: 'share', path: filePath, created: Date.now() };
+
+    // "never" = 100 years
+    if (expiresIn === 'never') {
+      return jwt.sign(payload, JWT_SECRET, { expiresIn: '36500d' });
+    }
+
+    return jwt.sign(payload, JWT_SECRET, { expiresIn });
   }
 
   /**

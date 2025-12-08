@@ -64,7 +64,8 @@ export const CodeEditor = () => {
       '1h': '1 hour',
       '24h': '24 hours',
       '7d': '7 days',
-      '30d': '30 days'
+      '30d': '30 days',
+      'never': 'never (permanent)'
     };
     return map[exp] || exp;
   };
@@ -280,6 +281,7 @@ export const CodeEditor = () => {
                   <button onClick={() => handleShare('24h')}>24 hours</button>
                   <button onClick={() => handleShare('7d')}>7 days</button>
                   <button onClick={() => handleShare('30d')}>30 days</button>
+                  <button onClick={() => handleShare('never')}>Never</button>
                 </div>
               </>
             )}
