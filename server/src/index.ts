@@ -7,11 +7,17 @@ import dotenv from 'dotenv';
 import authRouter from './routes/auth.js';
 import filesRouter from './routes/files.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { authenticateToken } from './middleware/auth.js';
+import { FileController } from './controllers/fileController.js';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// File controller for serve endpoint
+const basePath = process.env.FILE_BASE_PATH || '../test-files';
+const fileController = new FileController(basePath);
 
 // Middleware
 app.use(helmet());
@@ -21,12 +27,16 @@ app.use(cors({
 }));
 app.use(compression());
 app.use(morgan('dev'));
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
+// No file size limit - allow unlimited uploads
+app.use(express.json({ limit: '500mb' }));
+app.use(express.urlencoded({ extended: true, limit: '500mb' }));
 
 // Routes
 app.use('/api/auth', authRouter);
 app.use('/api/files', filesRouter);
+
+// Serve endpoint for file preview (requires auth)
+app.get('/api/serve', authenticateToken, fileController.serveFile.bind(fileController));
 
 // Health check
 app.get('/health', (req, res) => {

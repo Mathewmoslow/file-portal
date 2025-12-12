@@ -116,6 +116,17 @@ class ApiService {
     await this.client.post('/files/rename', { from, to });
   }
 
+  async searchFiles(query: string, limit = 50): Promise<FileNode[]> {
+    const response = await this.client.get<{
+      success: boolean;
+      results: FileNode[];
+      totalResults: number;
+    }>('/files/search', {
+      params: { q: query, limit },
+    });
+    return response.data.results || [];
+  }
+
   async generateShareLink(path: string, expiresIn: string = '7d'): Promise<{ shareUrl: string; expiresIn: string }> {
     const response = await this.client.post<{
       success: boolean;

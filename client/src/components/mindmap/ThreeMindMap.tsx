@@ -1,8 +1,9 @@
-import { Suspense, useMemo, useState, useRef, useEffect } from 'react';
+import { Suspense, useMemo, useState, useRef, useEffect, useCallback } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Html } from '@react-three/drei';
 import type { FileNode } from '../../types';
 import { FileModal } from './FileModal';
+import { api } from '../../services/api';
 import './ThreeMindMap.css';
 
 interface ThreeMindMapProps {
@@ -83,34 +84,51 @@ export const ThreeMindMap = ({
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  useEffect(() => {
-    const term = search.trim().toLowerCase();
+  const [isSearching, setIsSearching] = useState(false);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const performSearch = useCallback(async (term: string) => {
     if (term.length < 2) {
       setSearchResults([]);
       return;
     }
 
-    // Search using cached preview data - much faster!
-    const matches = files.filter((f) => {
-      if (f.type !== 'file') return false;
+    setIsSearching(true);
+    try {
+      const results = await api.searchFiles(term, 50);
+      setSearchResults(results.filter(f => f.type === 'file'));
+    } catch (error) {
+      console.error('Search error:', error);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  }, []);
 
-      // Search in filename
-      if (f.name.toLowerCase().includes(term)) return true;
+  useEffect(() => {
+    const term = search.trim();
 
-      // Search in description
-      if (f.description?.toLowerCase().includes(term)) return true;
+    // Clear any pending search
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
 
-      // Search in preview text
-      if (f.preview?.toLowerCase().includes(term)) return true;
+    if (term.length < 2) {
+      setSearchResults([]);
+      return;
+    }
 
-      // Search in category
-      if (f.category?.toLowerCase().includes(term)) return true;
+    // Debounce search to avoid too many API calls
+    searchTimeoutRef.current = setTimeout(() => {
+      performSearch(term);
+    }, 300);
 
-      return false;
-    });
-
-    setSearchResults(matches);
-  }, [search, files]);
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [search, performSearch]);
 
   const layout = useMemo(() => {
     const dirs = files.filter((f) => f.type === 'directory');
@@ -213,7 +231,10 @@ export const ThreeMindMap = ({
           />
           <span className="search-shortcut">⌘K</span>
           <div className={`search-results ${showResults ? 'active' : ''}`}>
-            {searchResults.length > 0 && searchResults.map((item) => (
+            {isSearching && (
+              <div className="search-loading">Searching all files...</div>
+            )}
+            {!isSearching && searchResults.length > 0 && searchResults.map((item) => (
               <div
                 key={item.path}
                 className="search-result-item"
@@ -236,7 +257,7 @@ export const ThreeMindMap = ({
                 </div>
               </div>
             ))}
-            {search && searchResults.length === 0 && (
+            {!isSearching && search && search.length >= 2 && searchResults.length === 0 && (
               <div className="search-empty">No matches</div>
             )}
           </div>

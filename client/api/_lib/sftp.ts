@@ -250,3 +250,56 @@ export async function renamePath(oldPath: string, newPath: string) {
     await client.rename(oldRemote, newRemote);
   });
 }
+
+/**
+ * Recursively search all files matching a query
+ */
+export async function searchFiles(query: string, maxResults = 50) {
+  return withClient(async (client) => {
+    const results: Array<{
+      name: string;
+      path: string;
+      type: string;
+      size: number;
+      category?: string;
+    }> = [];
+
+    const searchTerm = query.toLowerCase();
+
+    async function walkDirectory(dirPath: string) {
+      if (results.length >= maxResults) return;
+
+      try {
+        const { remotePath } = toRemotePath(dirPath);
+        const entries = await client.list(remotePath);
+
+        for (const entry of entries) {
+          if (results.length >= maxResults) break;
+
+          const filePath = path.posix.join(dirPath, entry.name).replace(/\/+/g, '/');
+
+          // Check if name matches
+          if (entry.name.toLowerCase().includes(searchTerm)) {
+            results.push({
+              name: entry.name,
+              path: filePath,
+              type: entry.type === 'd' ? 'directory' : 'file',
+              size: entry.size ?? 0,
+              category: getCategoryFromPath(filePath),
+            });
+          }
+
+          // Recurse into directories
+          if (entry.type === 'd') {
+            await walkDirectory(filePath);
+          }
+        }
+      } catch (error) {
+        // Skip directories we can't read
+      }
+    }
+
+    await walkDirectory('/');
+    return results;
+  });
+}

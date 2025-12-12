@@ -198,11 +198,16 @@
   opacity: 0.7;
 }
 
-.search-empty {
+.search-empty,
+.search-loading {
   padding: 24px 16px;
   text-align: center;
   color: var(--muted);
   font-size: 13px;
+}
+
+.search-loading {
+  color: var(--accent);
 }
 
 /* ============================================
