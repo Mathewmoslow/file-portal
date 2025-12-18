@@ -11,7 +11,9 @@ export const authenticateToken = (
   next: NextFunction
 ) => {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+  const token =
+    (authHeader && authHeader.split(' ')[1]) ||
+    (typeof req.query.token === 'string' ? req.query.token : undefined);
 
   if (!token) {
     return res.status(401).json({
