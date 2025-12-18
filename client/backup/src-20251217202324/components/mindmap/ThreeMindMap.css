@@ -1,0 +1,386 @@
+/* ============================================
+   THREE MIND MAP - Editorial 3D Atlas
+   ============================================ */
+
+.three-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: var(--ivory);
+}
+
+/* ============================================
+   TOP BAR - Clean Navigation
+   ============================================ */
+
+.three-topbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background: linear-gradient(180deg, var(--ivory) 0%, transparent 100%);
+}
+
+.nav-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--black);
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.nav-title:hover {
+  color: var(--accent);
+}
+
+/* ============================================
+   SEARCH - Editorial Style
+   ============================================ */
+
+.search-container {
+  position: relative;
+  width: 320px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 10px 16px 10px 40px;
+  font-family: 'Manrope', sans-serif;
+  font-size: 13px;
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius);
+  background: white;
+  color: var(--black);
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.search-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(27, 67, 50, 0.1);
+}
+
+.search-input::placeholder {
+  color: var(--muted);
+  opacity: 0.5;
+}
+
+.search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  stroke: var(--muted);
+  stroke-width: 2;
+  fill: none;
+  opacity: 0.4;
+}
+
+.search-shortcut {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--muted);
+  opacity: 0.4;
+  padding: 2px 6px;
+  border: 1px solid var(--stroke);
+  border-radius: 3px;
+  background: var(--ivory);
+}
+
+/* ============================================
+   SEARCH RESULTS DROPDOWN
+   ============================================ */
+
+.search-results {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  max-height: 400px;
+  overflow-y: auto;
+  display: none;
+  z-index: 200;
+}
+
+.search-results.active {
+  display: block;
+}
+
+.search-result-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border-bottom: 1px solid var(--stroke);
+}
+
+.search-result-item:last-child {
+  border-bottom: none;
+}
+
+.search-result-item:hover {
+  background: var(--ivory-dark);
+}
+
+.search-result-item.selected {
+  background: var(--accent);
+  color: var(--ivory);
+}
+
+.result-icon {
+  width: 32px;
+  height: 32px;
+  background: var(--ivory);
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.search-result-item.selected .result-icon {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.result-icon svg {
+  width: 16px;
+  height: 16px;
+  stroke: var(--muted);
+  stroke-width: 1.5;
+  fill: none;
+}
+
+.search-result-item.selected .result-icon svg {
+  stroke: var(--ivory);
+}
+
+.result-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.result-name {
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+.result-meta {
+  font-size: 11px;
+  color: var(--muted);
+  opacity: 0.7;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.search-result-item.selected .result-meta {
+  color: var(--ivory);
+  opacity: 0.7;
+}
+
+.search-empty,
+.search-loading {
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.search-loading {
+  color: var(--accent);
+}
+
+/* ============================================
+   3D LABELS - Clean & Readable
+   ============================================ */
+
+.three-label {
+  background: white;
+  color: var(--black);
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius);
+  padding: 6px 12px;
+  font-family: 'Manrope', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  box-shadow: var(--shadow-md);
+  transition: all 0.2s ease;
+  pointer-events: none;
+}
+
+.three-label .label-name {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.three-label .label-meta {
+  font-size: 9px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.three-label.root {
+  background: var(--black);
+  color: var(--ivory);
+  border-color: var(--black);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 16px;
+}
+
+/* Hover state for labels */
+.three-label.hovered {
+  background: var(--accent);
+  color: var(--ivory);
+  border-color: var(--accent);
+  transform: scale(1.05);
+}
+
+/* ============================================
+   FLAG-STYLE LABELS WITH LETTER
+   ============================================ */
+
+.three-label-flag {
+  display: flex;
+  align-items: stretch;
+  background: white;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  font-family: 'Manrope', sans-serif;
+  white-space: nowrap;
+  pointer-events: none;
+  transition: all 0.2s ease;
+}
+
+.three-label-flag .flag-letter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  min-width: 28px;
+  padding: 6px 0;
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.three-label-flag .flag-name {
+  padding: 6px 12px 6px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--black);
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.three-label-flag.hovered {
+  transform: scale(1.05);
+  box-shadow: var(--shadow-lg);
+}
+
+.three-label-flag.hovered .flag-name {
+  font-weight: 600;
+}
+
+/* ============================================
+   ALPHABET LEGEND
+   ============================================ */
+
+.alpha-legend {
+  position: absolute;
+  bottom: 24px;
+  left: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: white;
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  box-shadow: var(--shadow-md);
+  z-index: 10;
+}
+
+.alpha-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.alpha-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.alpha-range {
+  font-family: 'Manrope', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--black);
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 768px) {
+  .three-topbar {
+    padding: 12px 16px;
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .search-container {
+    width: 100%;
+  }
+
+  .search-shortcut {
+    display: none;
+  }
+
+  .alpha-legend {
+    bottom: 12px;
+    left: 12px;
+    padding: 8px 12px;
+    gap: 4px;
+  }
+
+  .alpha-dot {
+    width: 10px;
+    height: 10px;
+  }
+
+  .alpha-range {
+    font-size: 10px;
+  }
+}

@@ -7,18 +7,41 @@ import { ThreeMindMap } from './components/mindmap/ThreeMindMap';
 import { api } from './services/api';
 import { LogOut } from 'lucide-react';
 import { useFileStore } from './store/fileStore';
+import { ColorPanel } from './processor/editor/ColorPanel';
+import { CompanionPanel } from './processor/companion/CompanionPanel';
+import { EditorCanvas, type EditorHandle } from './processor/editor/EditorCanvas';
 import './App.css';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(300);
   const [isResizing, setIsResizing] = useState(false);
-  const [view, setView] = useState<'atlas' | 'editor'>('atlas');
+  const [view, setView] = useState<'atlas' | 'editor' | 'processor'>('atlas');
   const [supportsWebGL, setSupportsWebGL] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const appRef = useRef<HTMLDivElement | null>(null);
-  const { fileTree, currentPath, loadFileTree, openFile, createFile, createDirectory, uploadFile, error } = useFileStore();
+  const {
+    fileTree,
+    currentPath,
+    loadFileTree,
+    openFile,
+    createFile,
+    createDirectory,
+    uploadFile,
+    error,
+    activeFile,
+    openFiles,
+    unsavedFiles,
+    updateFileContent,
+    saveFile,
+  } = useFileStore();
+  const editorRef = useRef<EditorHandle | null>(null);
   const uploadInputRef = useRef<HTMLInputElement | null>(null);
+  const [swatchColor, setSwatchColor] = useState('#4aa3ff');
+  const [showPalette, setShowPalette] = useState(false);
+  const [shareState, setShareState] = useState<{ url?: string; expiresIn?: string; loading?: boolean; error?: string }>({});
+  const [zoom, setZoom] = useState(1);
+  const apiBase = (import.meta.env.VITE_API_URL || 'http://localhost:3001/api').replace(/\/$/, '');
 
   useEffect(() => {
     // Check if already authenticated
@@ -79,6 +102,12 @@ const [newItemModal, setNewItemModal] = useState<{ open: boolean; type: 'file' |
     loadFileTree(parent || '/');
   };
 
+  const isTextLike = (path?: string) => {
+    if (!path) return false;
+    const ext = path.split('.').pop()?.toLowerCase() || '';
+    return ['txt', 'doc', 'docx', 'rtf', 'md'].includes(ext);
+  };
+
   const normalizePath = (base: string, relative: string) => {
     const cleanBase = base === '/' ? '' : base.replace(/\/+$/, '');
     const cleanRel = relative.replace(/^\/+/, '');
@@ -121,6 +150,17 @@ const [newItemModal, setNewItemModal] = useState<{ open: boolean; type: 'file' |
     }
   };
 
+  const handleOpenFile = async (path: string) => {
+    await openFile(path);
+    const file = useFileStore.getState().openFiles.get(path);
+    const binary = file?.isBinary;
+    if (isTextLike(path) && !binary) {
+      setView('processor');
+    } else {
+      setView('editor');
+    }
+  };
+
   const createItem = async () => {
     if (!newItemName.trim()) return;
     if (newItemModal.type === 'file') {
@@ -132,6 +172,48 @@ const [newItemModal, setNewItemModal] = useState<{ open: boolean; type: 'file' |
     setNewItemName('');
   };
 
+  const handleNewDocument = async () => {
+    const base = currentPath || '/';
+    const name = `untitled-${Date.now()}.docx`;
+    const targetPath = normalizePath(base, name);
+    await createFile(targetPath, '');
+    await handleOpenFile(targetPath);
+  };
+
+  const currentFile = activeFile ? openFiles.get(activeFile) : undefined;
+  const currentContent = currentFile?.content ?? '';
+  const isUnsaved = activeFile ? unsavedFiles.has(activeFile) : false;
+
+  const handleProcessorChange = (html: string) => {
+    if (activeFile) {
+      updateFileContent(activeFile, html);
+    }
+  };
+
+  const handleProcessorSave = async () => {
+    if (activeFile && currentContent !== undefined) {
+      await saveFile(activeFile, currentContent);
+    }
+  };
+
+  const buildServeUrl = (path: string) => {
+    const token = sessionStorage.getItem('token');
+    const serveBase = `${apiBase}/serve`;
+    return `${serveBase}?path=${encodeURIComponent(path)}${token ? `&token=${token}` : ''}`;
+  };
+
+  const handleProcessorPreview = () => {
+    if (!activeFile) return;
+    const url = buildServeUrl(activeFile);
+    window.open(url, '_blank');
+  };
+
+  const handleProcessorShare = (expiresIn: string = '7d') => {
+    if (!activeFile) return;
+    const url = buildServeUrl(activeFile);
+    setShareState({ url, expiresIn, loading: false });
+  };
+
   return (
     <div className="app" ref={appRef}>
       <header className="app-header">
@@ -140,6 +222,7 @@ const [newItemModal, setNewItemModal] = useState<{ open: boolean; type: 'file' |
         </div>
         <div className="header-actions">
           <button onClick={handleUp} className="text-btn">Up</button>
+          <button onClick={handleNewDocument} className="text-btn">New Document</button>
           <button onClick={() => setNewItemModal({ open: true, type: 'file' })} className="text-btn">New File</button>
           <button onClick={() => setNewItemModal({ open: true, type: 'folder' })} className="text-btn">New Folder</button>
           <button onClick={() => uploadInputRef.current?.click()} className="text-btn">Upload</button>
@@ -169,6 +252,12 @@ const [newItemModal, setNewItemModal] = useState<{ open: boolean; type: 'file' |
             >
               Editor
             </button>
+            <button
+              className={`switch-btn ${view === 'processor' ? 'active' : ''}`}
+              onClick={() => setView('processor')}
+            >
+              Processor
+            </button>
           </div>
           <button
             className="text-btn"
@@ -188,7 +277,7 @@ const [newItemModal, setNewItemModal] = useState<{ open: boolean; type: 'file' |
         {!sidebarCollapsed && (
           <>
             <aside className="sidebar" style={{ width: sidebarWidth }}>
-              <FileTree onFileOpen={() => setView('editor')} />
+              <FileTree onFileOpen={(path) => handleOpenFile(path)} />
             </aside>
             <div
               className={`resizer ${isResizing ? 'dragging' : ''}`}
@@ -204,8 +293,7 @@ const [newItemModal, setNewItemModal] = useState<{ open: boolean; type: 'file' |
                 files={fileTree}
                 currentPath={currentPath || '/'}
                 onOpenFile={(path) => {
-                  openFile(path);
-                  setView('editor');
+                  handleOpenFile(path);
                 }}
                 onSelectPath={(path) => loadFileTree(path)}
                 onFallback={() => setSupportsWebGL(false)}
@@ -215,14 +303,109 @@ const [newItemModal, setNewItemModal] = useState<{ open: boolean; type: 'file' |
                 files={fileTree}
                 currentPath={currentPath || '/'}
                 onOpenFile={(path) => {
-                  openFile(path);
-                  setView('editor');
+                  handleOpenFile(path);
                 }}
                 onSelectPath={(path) => loadFileTree(path)}
               />
             )
           ) : (
-            <CodeEditor />
+            view === 'editor' ? <CodeEditor /> : (
+              <div className="processor-view">
+                <div className="processor-toolbar">
+                  <div className="processor-file-meta">
+                    <div className="processor-path">{activeFile || 'No document open'}</div>
+                    {isUnsaved && <span className="unsaved-pill">Unsaved</span>}
+                  </div>
+                  <div className="processor-actions">
+                    <button className="text-btn" onClick={handleProcessorSave} disabled={!activeFile}>Save</button>
+                    <button className="text-btn" onClick={handleProcessorPreview} disabled={!activeFile}>Preview</button>
+                    <button className="text-btn" onClick={() => handleProcessorShare('7d')} disabled={!activeFile}>Share</button>
+                    <button className="text-btn" onClick={() => setShowPalette((v) => !v)}>
+                      {showPalette ? 'Hide Palette' : 'View Palette'}
+                    </button>
+                    <select
+                      className="text-btn zoom-select"
+                      value={zoom}
+                      onChange={(e) => setZoom(Number(e.target.value))}
+                    >
+                      {[0.75, 1, 1.25, 1.5].map((z) => (
+                        <option key={z} value={z}>{Math.round(z * 100)}%</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="processor-body">
+                  <div className="processor-canvas">
+                    {activeFile && !currentFile?.isBinary ? (
+                      <EditorCanvas
+                        ref={editorRef}
+                        swatchColor={swatchColor}
+                        onSwatchChange={setSwatchColor}
+                        content={currentContent}
+                        onContentChange={handleProcessorChange}
+                        zoom={zoom}
+                      />
+                    ) : (
+                      <div className="editor-empty">
+                        <div className="empty-state">
+                          <h2>{currentFile?.isBinary ? 'Binary file' : 'No Document Open'}</h2>
+                          <p>{currentFile?.isBinary ? 'Binary documents are preview-only.' : 'Select or create a document to edit.'}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <aside className="processor-rail">
+                    {showPalette && (
+                      <div className="palette-card">
+                        <ColorPanel
+                          current={swatchColor}
+                          onSelectColor={(c) => {
+                            setSwatchColor(c);
+                            editorRef.current?.applyColor(c);
+                          }}
+                        />
+                      </div>
+                    )}
+                    <div className="companion-card">
+                      <CompanionPanel editorRef={editorRef} />
+                    </div>
+                  </aside>
+                </div>
+
+                {shareState.url && (
+                  <div className="share-banner">
+                    <div className="share-info">
+                      <span>Share link (expires {shareState.expiresIn || '7d'}):</span>
+                      <input readOnly value={shareState.url} />
+                    </div>
+                    <button
+                      className="text-btn"
+                      onClick={() => {
+                        navigator.clipboard?.writeText(shareState.url || '');
+                      }}
+                    >
+                      Copy
+                    </button>
+                    <div className="share-expiry-options">
+                      <span>Expiration:</span>
+                      {['1h', '24h', '7d', '30d', 'never'].map((exp) => (
+                        <button key={exp} className="text-btn" onClick={() => handleProcessorShare(exp)}>
+                          {exp}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {shareState.error && (
+                  <div className="error-toast">
+                    <div className="error-content">
+                      <strong>Error:</strong> {shareState.error}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
           )}
         </main>
       </div>

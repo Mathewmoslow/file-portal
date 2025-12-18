@@ -6,7 +6,7 @@ import { Save, X, ExternalLink, Share2, Copy, Check } from 'lucide-react';
 import './CodeEditor.css';
 
 export const CodeEditor = () => {
-  const previewBase = import.meta.env.VITE_PREVIEW_BASE_URL || 'https://files.mathewmoslow.com';
+  const apiBase = (import.meta.env.VITE_API_URL || 'http://localhost:3001/api').replace(/\/$/, '');
   const [shareModal, setShareModal] = useState<{ open: boolean; url?: string; loading?: boolean; error?: string; expiresIn?: string }>({ open: false });
   const [copied, setCopied] = useState(false);
   const {
@@ -35,28 +35,22 @@ export const CodeEditor = () => {
     }
   };
 
+  const buildServeUrl = (path: string) => {
+    const token = sessionStorage.getItem('token');
+    const serveBase = `${apiBase}/serve`;
+    return `${serveBase}?path=${encodeURIComponent(path)}${token ? `&token=${token}` : ''}`;
+  };
+
   const handlePreview = async () => {
     if (!activeFile) return;
-    try {
-      // Generate a short-lived token for preview
-      const result = await api.generateShareLink(activeFile, '1h');
-      window.open(result.shareUrl, '_blank');
-    } catch (err) {
-      // Fallback to direct link if token generation fails
-      const url = `${previewBase}${activeFile}`;
-      window.open(url, '_blank');
-    }
+    const url = buildServeUrl(activeFile);
+    window.open(url, '_blank');
   };
 
   const handleShare = async (expiresIn: string = '7d') => {
     if (!activeFile) return;
-    setShareModal({ open: true, loading: true });
-    try {
-      const result = await api.generateShareLink(activeFile, expiresIn);
-      setShareModal({ open: true, url: result.shareUrl, expiresIn: result.expiresIn });
-    } catch (err: any) {
-      setShareModal({ open: true, error: err.message || 'Failed to generate share link' });
-    }
+    const url = buildServeUrl(activeFile);
+    setShareModal({ open: true, url, expiresIn });
   };
 
   const formatExpiration = (exp: string) => {

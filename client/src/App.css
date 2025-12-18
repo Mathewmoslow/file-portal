@@ -183,6 +183,157 @@
 }
 
 /* ============================================
+   PROCESSOR VIEW (Atelier)
+   ============================================ */
+
+.processor-view {
+  --bg: #f5efe2;
+  --bg-darker: #ede4d3;
+  --panel: #f7f2e8;
+  --panel2: #efe6d7;
+  --panel3: #e7dac6;
+  --text: #1f231a;
+  --text-muted: #505646;
+  --line: #d2c7b3;
+  --accent: #1f4c2e;
+  --accent-hover: #2f6a45;
+  --page: #fffaf0;
+  --page-text: #16160f;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.processor-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+  gap: 10px;
+}
+
+.processor-file-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.processor-path {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.unsaved-pill {
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.processor-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.zoom-select {
+  min-width: 72px;
+}
+
+.processor-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 12px;
+  padding: 10px 12px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.processor-canvas {
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  border-radius: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.processor-rail {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 0;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: auto;
+  min-width: 280px;
+}
+
+.palette-card {
+  border: 0;
+  border-radius: 0;
+  padding: 4px 0;
+  background: transparent;
+}
+
+.companion-card {
+  flex: 1;
+  min-height: 0;
+}
+
+
+.share-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--panel2);
+  border-top: 1px solid var(--line);
+}
+
+.share-banner input {
+  flex: 1;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--line);
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.share-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.share-expiry-options {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.share-expiry-options .text-btn {
+  padding: 6px 10px;
+}
+
+/* ============================================
    MODAL STYLING
    ============================================ */
 

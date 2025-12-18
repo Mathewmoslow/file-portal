@@ -1,0 +1,150 @@
+.companion-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.companion-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.companion-title-wrap {
+  min-width: 0;
+}
+
+.companion-title {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.companion-sub {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.voice-select {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 6px 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+.voice-summary {
+  font-size: 12px;
+}
+
+.selection-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+.selection-box {
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 0;
+  padding: 8px;
+  background: var(--panel2);
+  font-size: 12px;
+  color: var(--text-muted);
+  word-break: break-word;
+}
+
+.rules-popover ul {
+  padding-left: 16px;
+  margin: 4px 0 0;
+}
+
+.rules-section + .rules-section {
+  margin-top: 8px;
+}
+
+.suggestion-card .card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.card-body {
+  margin-bottom: 6px;
+  white-space: pre-wrap;
+}
+
+.flags-list {
+  padding-left: 16px;
+  margin: 4px 0 8px;
+  color: #ffa940;
+  font-size: 12px;
+}
+
+.chat-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.chat-log {
+  max-height: 220px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.chat-bubble {
+  margin-bottom: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+}
+
+.chat-bubble.user {
+  background: rgba(74, 163, 255, 0.08);
+}
+
+.chat-bubble.assistant {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.chat-role {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.chat-text {
+  white-space: pre-wrap;
+}
+
+.autonomous-log {
+  min-height: 80px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.style-list ul {
+  padding-left: 16px;
+  margin: 4px 0 0;
+}
+
+.log-line {
+  margin-bottom: 4px;
+}

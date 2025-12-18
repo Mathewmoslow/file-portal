@@ -6,14 +6,13 @@ import { File, Folder, Trash2, Edit3, ExternalLink } from 'lucide-react';
 import './FileTree.css';
 
 interface FileTreeProps {
-  onFileOpen?: () => void;
+  onFileOpen?: (path: string) => void;
 }
 
 export const FileTree = ({ onFileOpen }: FileTreeProps) => {
   const {
     fileTree,
     loadFileTree,
-    openFile,
     activeFile,
     isLoading,
     createFile,
@@ -38,8 +37,12 @@ export const FileTree = ({ onFileOpen }: FileTreeProps) => {
 
   const handleFileClick = (node: FileNode) => {
     if (node.type === 'file') {
-      openFile(node.path);
-      onFileOpen?.();
+      if (onFileOpen) {
+        onFileOpen(node.path);
+      } else {
+        // fallback behavior if no handler is provided
+        useFileStore.getState().openFile(node.path);
+      }
     } else {
       navigateTo(node.path);
     }
