@@ -37,6 +37,13 @@ export const AuthGate = ({ onLogin }: AuthGateProps) => {
 
         <form onSubmit={handleSubmit} autoComplete="on">
           <input
+            type="text"
+            name="username"
+            autoComplete="username"
+            style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px' }}
+            aria-hidden="true"
+          />
+          <input
             type="password"
             name="password"
             placeholder="Password"

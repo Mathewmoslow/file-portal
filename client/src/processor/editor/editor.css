@@ -401,10 +401,6 @@
   grid-template-columns: repeat(9, 18px);
   gap: 4px;
 }
-  height: 18px;
-  border-radius: 0;
-  border: 1px solid var(--line);
-}
 
 .page-wrap {
   flex: 1;
