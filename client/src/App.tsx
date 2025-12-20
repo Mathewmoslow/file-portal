@@ -180,10 +180,11 @@ const [newItemModal, setNewItemModal] = useState<{ open: boolean; type: 'file' |
 
   const handleNewDocument = async () => {
     const base = currentPath || '/';
-    const name = `untitled-${Date.now()}.docx`;
+    const name = `untitled-${Date.now()}.html`;
     const targetPath = normalizePath(base, name);
     await createFile(targetPath, '');
     await handleOpenFile(targetPath);
+    setView('editor'); // open new files in Monaco/code editor by default
   };
 
   const currentFile = activeFile ? openFiles.get(activeFile) : undefined;

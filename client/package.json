@@ -11,6 +11,10 @@
   },
   "dependencies": {
     "@ant-design/icons": "^5.5.6",
+    "@emotion/react": "^11.13.3",
+    "@emotion/styled": "^11.13.0",
+    "@mui/icons-material": "^5.15.20",
+    "@mui/material": "^5.15.20",
     "@monaco-editor/react": "^4.6.0",
     "@react-three/drei": "^9.80.0",
     "@react-three/fiber": "^8.15.10",
