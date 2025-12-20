@@ -3,7 +3,6 @@ import type React from 'react'
 import { useEditor, EditorContent, type Editor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
-import Link from '@tiptap/extension-link'
 import Placeholder from '@tiptap/extension-placeholder'
 import TextAlign from '@tiptap/extension-text-align'
 import Highlight from '@tiptap/extension-highlight'
@@ -141,7 +140,6 @@ export const EditorCanvas = forwardRef<EditorHandle, EditorCanvasProps>(
           HTMLAttributes: { class: 'soft-break' },
         }),
         Underline,
-        Link.configure({ openOnClick: false }),
         Placeholder.configure({ placeholder: 'Start writing your piece...' }),
         TextAlign.configure({ types: ['heading', 'paragraph'] }),
         Highlight,

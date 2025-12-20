@@ -220,6 +220,40 @@ const [newItemModal, setNewItemModal] = useState<{ open: boolean; type: 'file' |
     setShareState({ url, expiresIn, loading: false });
   };
 
+  const handleExportDocx = async () => {
+    const html = editorRef.current?.getDocumentHtml ? editorRef.current.getDocumentHtml() : ''
+    if (!html) return
+    try {
+      const token = sessionStorage.getItem('token')
+      const res = await fetch(`${apiBase}/export/docx`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ html, filename: activeFile || 'document' }),
+      })
+      if (!res.ok) {
+        const err = await res.text()
+        throw new Error(err || `Export failed (${res.status})`)
+      }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = (activeFile?.split('/').pop() || 'document') + '.docx'
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (e: any) {
+      console.error(e)
+      alert(e?.message || 'Export failed')
+    }
+  }
+
+  const handleExportPdf = () => {
+    window.print()
+  }
+
   return (
     <div className="app" ref={appRef}>
       <header className="app-header">

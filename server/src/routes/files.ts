@@ -3,11 +3,15 @@ import { FileController } from '../controllers/fileController.js';
 import { authenticateToken } from '../middleware/auth.js';
 
 const router = Router();
-const basePath = process.env.FILE_BASE_PATH || '../test-files';
-const fileController = new FileController(basePath);
+const fileController = new FileController();
 
 // All routes require authentication
 router.use(authenticateToken);
+
+// Writing styles stub (returns empty list until storage is wired)
+router.get('/styles', (_req, res) => {
+  res.json({ success: true, items: [] });
+});
 
 // File operations
 router.get('/list', fileController.listFiles.bind(fileController));

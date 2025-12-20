@@ -7,6 +7,7 @@ import dotenv from 'dotenv';
 import authRouter from './routes/auth.js';
 import filesRouter from './routes/files.js';
 import exportRouter from './routes/export.js';
+import stylesRouter from './routes/styles.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { authenticateToken } from './middleware/auth.js';
 import { FileController } from './controllers/fileController.js';
@@ -16,9 +17,8 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// File controller for serve endpoint
-const basePath = process.env.FILE_BASE_PATH || '../test-files';
-const fileController = new FileController(basePath);
+// File controller for serve endpoint (now SFTP-backed)
+const fileController = new FileController();
 
 // Middleware
 app.use(helmet());
@@ -36,6 +36,7 @@ app.use(express.urlencoded({ extended: true, limit: '500mb' }));
 app.use('/api/auth', authRouter);
 app.use('/api/files', filesRouter);
 app.use('/api/export', exportRouter);
+app.use('/api/styles', stylesRouter);
 
 // Serve endpoint for file preview (requires auth)
 app.get('/api/serve', authenticateToken, fileController.serveFile.bind(fileController));

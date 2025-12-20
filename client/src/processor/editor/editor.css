@@ -418,16 +418,28 @@
 }
 
 .page {
-  background: #ffffff;
+  --page-width: 816px; /* 8.5in at 96dpi */
+  --page-height: 1056px; /* 11in at 96dpi */
+  --page-gap: 32px;
+  width: var(--page-width);
+  min-height: calc(var(--page-height) * 2);
   color: var(--page-text);
-  width: 816px; /* 8.5in at 96dpi */
-  min-height: 1056px; /* 11in at 96dpi */
   border-radius: 0;
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.05);
   padding: 40px 48px;
   border: 1px solid var(--line);
   transform-origin: top center;
   transform: scale(var(--zoom, 1));
+  background-color: #ffffff;
+  background-image: linear-gradient(
+    to bottom,
+    #ffffff 0,
+    #ffffff var(--page-height),
+    #f5f2ec var(--page-height),
+    #f5f2ec calc(var(--page-height) + var(--page-gap))
+  );
+  background-repeat: repeat-y;
+  background-size: 100% calc(var(--page-height) + var(--page-gap));
 }
 
 .page .ProseMirror {
@@ -513,5 +525,30 @@
 
   .align-group-pop {
     display: flex;
+  }
+}
+
+/* Print: show only the page content */
+@media print {
+  body {
+    background: #ffffff !important;
+  }
+  .app,
+  .app * {
+    visibility: hidden;
+  }
+  .page,
+  .page * {
+    visibility: visible;
+  }
+  .page {
+    position: absolute;
+    left: 0;
+    top: 0;
+    box-shadow: none;
+    border: none;
+    transform: none !important;
+    width: 816px !important;
+    min-height: 1056px !important;
   }
 }

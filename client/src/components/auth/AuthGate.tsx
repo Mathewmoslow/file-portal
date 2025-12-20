@@ -35,9 +35,10 @@ export const AuthGate = ({ onLogin }: AuthGateProps) => {
       <div className="auth-card">
         <img src="/logo.png" alt="Atelier Moslow" className="auth-logo" />
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} autoComplete="on">
           <input
             type="password"
+            name="password"
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
