@@ -124,6 +124,7 @@ export const EditorCanvas = forwardRef<EditorHandle, EditorCanvasProps>(
           bulletList: { keepMarks: true },
           orderedList: { keepMarks: true },
           hardBreak: false,
+          underline: false,
         }),
         HardBreak.configure({
           keepMarks: true,
@@ -461,6 +462,8 @@ export const EditorCanvas = forwardRef<EditorHandle, EditorCanvasProps>(
                 '--para-spacing': `${paraSpacing}px`,
                 '--para-before': `${paraBefore}px`,
                 '--para-after': `${paraAfter}px`,
+                '--indent-left': `${indentLeft}px`,
+                '--indent-right': `${indentRight}px`,
                 '--hyphenate': hyphenate ? 'auto' : 'manual',
                 '--zoom': zoom,
                 '--theme-accent1': theme?.colors?.[0] || '#2f5597',

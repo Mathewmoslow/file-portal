@@ -450,6 +450,8 @@
 .page .ProseMirror p {
   margin: var(--para-before, 0px) 0 var(--para-after, 12px) 0;
   line-height: var(--line-height, 1.6);
+  margin-left: var(--indent-left, 0px);
+  margin-right: var(--indent-right, 0px);
 }
 
 .page .ProseMirror h1 {

@@ -90,7 +90,13 @@ export const useCompanionStore = create<CompanionState>((set, get) => ({
   loadWritingStyles: async () => {
     try {
       const res = await fetch('/api/styles')
-      if (!res.ok) throw new Error(`Failed to load styles (${res.status})`)
+      if (!res.ok) {
+        if (res.status === 404) {
+          set({ writingStyles: [] })
+          return
+        }
+        throw new Error(`Failed to load styles (${res.status})`)
+      }
       const data = await res.json()
       const styles = Array.isArray(data?.styles) ? data.styles : []
       set({ writingStyles: styles })
