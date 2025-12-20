@@ -80,35 +80,25 @@ const RibbonButton = ({
 )
 
 function useRibbon(editor: Editor | null) {
-    const setAlign = (align: AlignOption) => editor?.chain().focus().setTextAlign(align).run()
+  const setAlign = (align: AlignOption) => editor?.chain().focus().setTextAlign(align).run()
 
-    return {
-      bold: () => editor?.chain().focus().toggleBold().run(),
-      italic: () => editor?.chain().focus().toggleItalic().run(),
-      underline: () => editor?.chain().focus().toggleUnderline().run(),
-      strike: () => editor?.chain().focus().toggleStrike().run(),
-      highlight: () => editor?.chain().focus().toggleHighlight({ color: '#ffeb3b66' }).run(),
-      alignLeft: () => setAlign('left'),
-      alignCenter: () => setAlign('center'),
-      alignRight: () => setAlign('right'),
-      alignJustify: () => setAlign('justify'),
-      bullet: () => editor?.chain().focus().toggleBulletList().run(),
-      ordered: () => editor?.chain().focus().toggleOrderedList().run(),
-      indent: () => {
-        const isList = editor?.isActive('bulletList') || editor?.isActive('orderedList')
-        if (isList) return editor?.chain().focus().sinkListItem('listItem').run()
-        return editor?.chain().focus().setMark('textStyle', { marginLeft: `${indentLeft + 20}px` }).run()
-      },
-      outdent: () => {
-        const isList = editor?.isActive('bulletList') || editor?.isActive('orderedList')
-        if (isList) return editor?.chain().focus().liftListItem('listItem').run()
-        const next = Math.max(0, indentLeft - 20)
-        setIndentLeft(next)
-        return editor?.chain().focus().setMark('textStyle', { marginLeft: `${next}px` }).run()
-      },
-      clearFormatting: () => editor?.chain().focus().unsetAllMarks().clearNodes().run(),
-    }
+  return {
+    bold: () => editor?.chain().focus().toggleBold().run(),
+    italic: () => editor?.chain().focus().toggleItalic().run(),
+    underline: () => editor?.chain().focus().toggleUnderline().run(),
+    strike: () => editor?.chain().focus().toggleStrike().run(),
+    highlight: () => editor?.chain().focus().toggleHighlight({ color: '#ffeb3b66' }).run(),
+    alignLeft: () => setAlign('left'),
+    alignCenter: () => setAlign('center'),
+    alignRight: () => setAlign('right'),
+    alignJustify: () => setAlign('justify'),
+    bullet: () => editor?.chain().focus().toggleBulletList().run(),
+    ordered: () => editor?.chain().focus().toggleOrderedList().run(),
+    indent: () => editor?.chain().focus().sinkListItem('listItem').run(),
+    outdent: () => editor?.chain().focus().liftListItem('listItem').run(),
+    clearFormatting: () => editor?.chain().focus().unsetAllMarks().clearNodes().run(),
   }
+}
 
 export const EditorCanvas = forwardRef<EditorHandle, EditorCanvasProps>(
   ({ isMobile, swatchColor, onSwatchChange, content, onContentChange, zoom = 1, theme }, ref) => {
@@ -198,10 +188,10 @@ export const EditorCanvas = forwardRef<EditorHandle, EditorCanvasProps>(
       }
     }, [content, editor])
 
-    const applyColor = (color: string) => {
-      onSwatchChange?.(color)
-      editor?.chain().focus().setColor(color).run()
-    }
+  const applyColor = (color: string) => {
+    onSwatchChange?.(color)
+    editor?.chain().focus().setColor(color).run()
+  }
 
     const applyFontFamily = (family: string) => {
       setFontFamily(family)
@@ -229,12 +219,12 @@ export const EditorCanvas = forwardRef<EditorHandle, EditorCanvasProps>(
 
   const applyIndentLeft = (value: number) => {
     setIndentLeft(value)
-    editor?.chain().focus().setMark('textStyle', { marginLeft: `${value}px` }).run()
+    editor?.chain().focus().setNode('paragraph', { style: `margin-left:${value}px;` }).run()
   }
 
-    const applyIndentRight = (value: number) => {
+  const applyIndentRight = (value: number) => {
     setIndentRight(value)
-    editor?.chain().focus().setMark('textStyle', { marginRight: `${value}px` }).run()
+    editor?.chain().focus().setNode('paragraph', { style: `margin-right:${value}px;` }).run()
   }
 
   const applyParagraphSpacing = (before: number, after: number, spacing: number) => {
@@ -260,8 +250,14 @@ export const EditorCanvas = forwardRef<EditorHandle, EditorCanvasProps>(
     [editor],
   )
 
-    const applyLineHeight = (value: number) => setLineHeight(value)
-    const applyParaSpacing = (value: number) => setParaSpacing(value)
+    const applyLineHeight = (value: number) => {
+      setLineHeight(value)
+      editor?.chain().focus().setMark('textStyle', { lineHeight: value }).run()
+    }
+    const applyParaSpacing = (value: number) => {
+      setParaSpacing(value)
+      editor?.chain().focus().setNode('paragraph', { style: `margin-bottom:${value}px;` }).run()
+    }
 
     const stats = useMemo(() => {
       if (!editor) return { words: 0, chars: 0 }
