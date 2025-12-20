@@ -2,6 +2,7 @@ import path from 'path'
 import crypto from 'crypto'
 import { Request, Response, NextFunction } from 'express'
 import { withSftp, joinRemote, SFTP_BASE } from '../utils/sftp.js'
+import { CryptoService } from '../utils/crypto.js'
 
 const mimeTypes: Record<string, string> = {
   '.html': 'text/html',
@@ -192,12 +193,44 @@ export class FileController {
   async serveFile(req: Request, res: Response, next: NextFunction) {
     try {
       const remote = this.resolvePath(req.query.path as string)
+      // auth: accept bearer token or share token
+      const authHeader = req.headers.authorization
+      const bearer = authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : undefined
+      const shareToken = typeof req.query.token === 'string' ? req.query.token : undefined
+      let authorized = false
+      if (bearer && CryptoService.verifyToken(bearer)) {
+        authorized = true
+      }
+      if (!authorized && shareToken) {
+        const decoded = CryptoService.verifyToken(shareToken)
+        if (decoded?.path && decoded.path === req.query.path) {
+          authorized = true
+        }
+      }
+      if (!authorized) {
+        return res.status(401).json({ success: false, error: { code: 'AUTH_REQUIRED', message: 'Unauthorized' } })
+      }
+
       const data = await withSftp(async (sftp) => sftp.get(remote))
       const buf = Buffer.isBuffer(data) ? data : Buffer.from(data as any)
       const ext = path.extname(remote).toLowerCase()
-      res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream')
+      let body = buf
+      let contentType = mimeTypes[ext] || 'application/octet-stream'
+      // Basic relative asset rewrite for HTML
+      if (ext === '.html' || ext === '.htm') {
+        const html = buf.toString('utf-8')
+        const baseDir = remote.substring(0, remote.lastIndexOf('/'))
+        const rewrite = html.replace(/(src|href)=\"(?!https?:)([^\"#]+)\"/g, (_m, attr, val) => {
+          const target = val.startsWith('/') ? val : `${baseDir}/${val}`
+          const encoded = encodeURIComponent(target.replace(SFTP_BASE, ''))
+          return `${attr}="/api/serve?path=${encoded}"`
+        })
+        body = Buffer.from(rewrite, 'utf-8')
+        contentType = 'text/html'
+      }
+      res.setHeader('Content-Type', contentType)
       res.setHeader('Content-Length', buf.length)
-      res.send(buf)
+      res.send(body)
     } catch (error) {
       next(error)
     }
@@ -233,6 +266,20 @@ export class FileController {
         await walk(SFTP_BASE)
       })
       res.json({ success: true, results, totalResults: results.length })
+    } catch (error) {
+      next(error)
+    }
+  }
+
+  async createShareLink(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { path: filePath, expiresIn = '7d' } = req.body
+      if (!filePath) {
+        return res.status(400).json({ success: false, error: { code: 'MISSING_PATH', message: 'Path is required' } })
+      }
+      const token = CryptoService.generateTokenWithPath(filePath, expiresIn === 'never' ? undefined : expiresIn)
+      const shareUrl = `/api/serve?path=${encodeURIComponent(filePath)}&token=${token}`
+      res.json({ success: true, shareUrl, expiresIn })
     } catch (error) {
       next(error)
     }

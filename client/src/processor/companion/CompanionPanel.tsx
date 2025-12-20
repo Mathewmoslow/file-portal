@@ -7,7 +7,7 @@ import { voicePresets } from '../shared/voices'
 import { auditText } from '../shared/audit'
 import { masterRulesSummary, masterStyleCondensed, masterStyleFull, punctuationRules, cadenceRules, styleNotes } from '../shared/rules'
 import { callCompanion } from '../api/companion'
-import type { EditorHandle } from '../editor/EditorCanvas'
+import type { RichTextHandle } from '../editor/RichTextEditor'
 import './companion.css'
 
 const { Text } = Typography
@@ -290,7 +290,7 @@ function AutonomousMode() {
   )
 }
 
-export function CompanionPanel({ editorRef }: { editorRef?: React.RefObject<EditorHandle> }) {
+export function CompanionPanel({ editorRef }: { editorRef?: React.RefObject<RichTextHandle> }) {
   const companionState = useCompanionStore() as any
   const {
     activeVoice,

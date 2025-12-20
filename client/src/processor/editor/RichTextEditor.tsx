@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react'
 import {
   Box,
   Paper,
@@ -69,10 +69,18 @@ import {
   Psychology,
 } from '@mui/icons-material'
 
+export interface RichTextHandle {
+  getHtml: () => string
+  getText: () => string
+  applyHtml: (html: string) => void
+  applyText: (text: string) => void
+}
+
 interface RichTextEditorProps {
   initialContent: string
   onSave: (content: string) => void
   onPrint?: () => void
+  onChange?: (content: string) => void
 }
 
 const fontFamilies = ['Arial', 'Times New Roman', 'Georgia', 'Verdana', 'Helvetica', 'Courier New', 'Comic Sans MS', 'Impact', 'Lucida Console', 'Tahoma', 'Trebuchet MS', 'Palatino']
@@ -88,7 +96,10 @@ const colors = [
   '#f6b26b', '#ffd966', '#93c47d', '#76a5af', '#6d9eeb', '#6fa8dc', '#8e7cc3', '#c27ba0',
 ]
 
-export default function RichTextEditor({ initialContent, onSave, onPrint }: RichTextEditorProps) {
+const RichTextEditor = forwardRef<RichTextHandle, RichTextEditorProps>(function RichTextEditor(
+  { initialContent, onSave, onPrint, onChange },
+  ref,
+) {
   const editorRef = useRef<HTMLDivElement>(null)
   const [fontFamily, setFontFamily] = useState('Arial')
   const [fontSize, setFontSize] = useState('14px')
@@ -108,19 +119,22 @@ export default function RichTextEditor({ initialContent, onSave, onPrint }: Rich
     if (editorRef.current) {
       editorRef.current.innerHTML = initialContent || ''
       saveToUndoStack()
+      onChange?.(editorRef.current.innerHTML)
     }
-  }, [initialContent])
+  }, [initialContent, onChange])
 
   const execCommand = (command: string, value?: string) => {
     document.execCommand(command, false, value)
     editorRef.current?.focus()
     saveToUndoStack()
+    if (editorRef.current) onChange?.(editorRef.current.innerHTML)
   }
 
   const saveToUndoStack = () => {
     if (editorRef.current) {
       setUndoStack((prev) => [...prev.slice(-49), editorRef.current!.innerHTML])
       setRedoStack([])
+      onChange?.(editorRef.current.innerHTML)
     }
   }
 
@@ -363,6 +377,23 @@ export default function RichTextEditor({ initialContent, onSave, onPrint }: Rich
     execCommand('removeFormat')
     execCommand('formatBlock', 'div')
   }
+
+  useImperativeHandle(ref, () => ({
+    getHtml: () => editorRef.current?.innerHTML || '',
+    getText: () => editorRef.current?.innerText || '',
+    applyHtml: (html: string) => {
+      if (editorRef.current) {
+        editorRef.current.innerHTML = html
+        onChange?.(html)
+      }
+    },
+    applyText: (text: string) => {
+      if (editorRef.current) {
+        editorRef.current.innerHTML += text
+        onChange?.(editorRef.current.innerHTML)
+      }
+    },
+  }))
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -736,4 +767,6 @@ export default function RichTextEditor({ initialContent, onSave, onPrint }: Rich
       </Dialog>
     </Box>
   )
-}
+})
+
+export default RichTextEditor

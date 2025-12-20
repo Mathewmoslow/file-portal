@@ -22,6 +22,7 @@ router.delete('/delete', fileController.deleteFile.bind(fileController));
 router.post('/rename', fileController.renameFile.bind(fileController));
 router.post('/upload', fileController.uploadBase64.bind(fileController));
 router.get('/search', fileController.searchFiles.bind(fileController));
+router.post('/share', fileController.createShareLink.bind(fileController));
 
 // Directory operations
 router.post('/dir/create', fileController.createDirectory.bind(fileController));

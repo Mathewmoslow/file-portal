@@ -9,7 +9,7 @@ import { LogOut } from 'lucide-react';
 import { useFileStore } from './store/fileStore';
 import { ColorPanel, type ThemePalette } from './processor/editor/ColorPanel';
 import { CompanionPanel } from './processor/companion/CompanionPanel';
-import { EditorCanvas, type EditorHandle } from './processor/editor/EditorCanvas';
+import RichTextEditor, { type RichTextHandle } from './processor/editor/RichTextEditor';
 import './App.css';
 
 function App() {
@@ -35,7 +35,7 @@ function App() {
     updateFileContent,
     saveFile,
   } = useFileStore();
-  const editorRef = useRef<EditorHandle | null>(null);
+  const editorRef = useRef<RichTextHandle | null>(null);
   const uploadInputRef = useRef<HTMLInputElement | null>(null);
   const [swatchColor, setSwatchColor] = useState('#4aa3ff');
   const [showPalette, setShowPalette] = useState(false);
@@ -222,7 +222,7 @@ const [newItemModal, setNewItemModal] = useState<{ open: boolean; type: 'file' |
   };
 
   const handleExportDocx = async () => {
-    const html = editorRef.current?.getDocumentHtml ? editorRef.current.getDocumentHtml() : ''
+    const html = editorRef.current?.getHtml ? editorRef.current.getHtml() : ''
     if (!html) return
     try {
       const token = sessionStorage.getItem('token')
@@ -382,15 +382,18 @@ const [newItemModal, setNewItemModal] = useState<{ open: boolean; type: 'file' |
                 <div className="processor-body">
                   <div className="processor-canvas">
                     {activeFile && !currentFile?.isBinary ? (
-                    <EditorCanvas
-                      ref={editorRef}
-                      swatchColor={swatchColor}
-                      onSwatchChange={setSwatchColor}
-                      content={currentContent}
-                      onContentChange={handleProcessorChange}
-                      zoom={zoom}
-                      theme={theme}
-                    />
+                      <RichTextEditor
+                        ref={editorRef}
+                        initialContent={currentContent}
+                        onChange={handleProcessorChange}
+                        onSave={(html) => {
+                          if (activeFile) {
+                            updateFileContent(activeFile, html);
+                            saveFile(activeFile, html).catch(() => {});
+                          }
+                        }}
+                        onPrint={() => window.print()}
+                      />
                     ) : (
                       <div className="editor-empty">
                         <div className="empty-state">

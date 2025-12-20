@@ -9,7 +9,6 @@ import filesRouter from './routes/files.js';
 import exportRouter from './routes/export.js';
 import stylesRouter from './routes/styles.js';
 import { errorHandler } from './middleware/errorHandler.js';
-import { authenticateToken } from './middleware/auth.js';
 import { FileController } from './controllers/fileController.js';
 
 dotenv.config();
@@ -38,8 +37,8 @@ app.use('/api/files', filesRouter);
 app.use('/api/export', exportRouter);
 app.use('/api/styles', stylesRouter);
 
-// Serve endpoint for file preview (requires auth)
-app.get('/api/serve', authenticateToken, fileController.serveFile.bind(fileController));
+// Serve endpoint for file preview (auth handled inside to allow share tokens)
+app.get('/api/serve', fileController.serveFile.bind(fileController));
 
 // Health check
 app.get('/health', (req, res) => {

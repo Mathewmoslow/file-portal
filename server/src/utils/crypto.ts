@@ -23,6 +23,14 @@ export class CryptoService {
     );
   }
 
+  // Generate share token scoped to a path; expiresIn can be undefined for "never"
+  static generateTokenWithPath(path: string, expiresIn?: string): string {
+    const payload: any = { path, type: 'share', timestamp: Date.now() }
+    const options: any = {}
+    if (expiresIn) options.expiresIn = expiresIn
+    return jwt.sign(payload, JWT_SECRET, options)
+  }
+
   // Verify JWT token
   static verifyToken(token: string): any {
     try {
