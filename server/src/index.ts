@@ -6,6 +6,7 @@ import compression from 'compression';
 import dotenv from 'dotenv';
 import authRouter from './routes/auth.js';
 import filesRouter from './routes/files.js';
+import exportRouter from './routes/export.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { authenticateToken } from './middleware/auth.js';
 import { FileController } from './controllers/fileController.js';
@@ -34,6 +35,7 @@ app.use(express.urlencoded({ extended: true, limit: '500mb' }));
 // Routes
 app.use('/api/auth', authRouter);
 app.use('/api/files', filesRouter);
+app.use('/api/export', exportRouter);
 
 // Serve endpoint for file preview (requires auth)
 app.get('/api/serve', authenticateToken, fileController.serveFile.bind(fileController));

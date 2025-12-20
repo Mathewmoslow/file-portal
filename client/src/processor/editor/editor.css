@@ -8,11 +8,11 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 10px;
-  padding: 6px 10px;
+  gap: 6px;
+  padding: 4px 8px;
   background: var(--panel);
   border-bottom: 1px solid var(--line);
-  min-height: 42px;
+  min-height: 38px;
   position: sticky;
   top: 0;
   z-index: 2;
@@ -47,7 +47,7 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 4px;
 }
 
 .case-buttons {
@@ -178,10 +178,10 @@
 .color-panel {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   background: transparent;
   border: 0;
-  padding: 8px 6px;
+  padding: 6px 4px;
 }
 
 .palette-light .shape {
@@ -197,6 +197,10 @@
   grid-template-columns: 70px 1fr 120px;
   gap: 10px;
   align-items: start;
+}
+
+.palette-row.top.simple {
+  grid-template-columns: 60px 1fr;
 }
 
 .active-chip {
@@ -218,18 +222,38 @@
   align-self: center;
 }
 
+.history-grid.simple {
+  grid-template-columns: repeat(8, 18px);
+  gap: 4px;
+}
+
 .history-chip {
   width: 18px;
   height: 18px;
   position: relative;
   border: none;
+  padding: 0;
 }
 
 .history-fill {
   position: absolute;
   inset: 3px;
   border-radius: 2px;
-  border: 1px solid var(--line);
+  border: 1px solid rgba(0, 0, 0, 0.18);
+}
+
+.simple-picker {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.simple-picker input[type="color"] {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  background: #fff;
 }
 
 .shades-tints {
@@ -250,6 +274,10 @@
   gap: 6px;
 }
 
+.metrics-wrap.simple {
+  gap: 4px;
+}
+
 .metric-labels {
   display: flex;
   justify-content: space-between;
@@ -261,13 +289,13 @@
 .metric-inputs {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 4px;
+  gap: 2px;
 }
 
 .metric-inputs input {
   width: 100%;
-  padding: 8px 10px;
-  border: 1px solid var(--line);
+  padding: 6px 8px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
   background: #fff;
   color: var(--page-text);
   text-align: center;
@@ -288,14 +316,14 @@
   flex: 1;
   min-width: 120px;
   padding: 8px 10px;
-  border: 1px solid var(--line);
+  border: 1px solid rgba(0, 0, 0, 0.18);
   background: #fff;
   color: var(--page-text);
 }
 
 .ghost-button {
   background: transparent;
-  border: 1px solid var(--line);
+  border: 1px solid rgba(0, 0, 0, 0.2);
   padding: 8px 12px;
   cursor: pointer;
   color: var(--text);
@@ -397,7 +425,7 @@
   width: 816px; /* 8.5in at 96dpi */
   min-height: 1056px; /* 11in at 96dpi */
   border-radius: 0;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.05);
   padding: 40px 48px;
   border: 1px solid var(--line);
   transform-origin: top center;
@@ -407,25 +435,28 @@
 .page .ProseMirror {
   min-height: 900px;
   outline: none;
-  font-family: var(--font-editor);
+  font-family: var(--theme-font-body, var(--font-editor));
   font-size: 17px;
   line-height: var(--line-height, 1.6);
   hyphens: var(--hyphenate, auto);
 }
 
 .page .ProseMirror p {
-  margin: var(--para-before, 0px) 0 var(--para-after, 14px) 0;
+  margin: var(--para-before, 0px) 0 var(--para-after, 12px) 0;
+  line-height: var(--line-height, 1.6);
 }
 
 .page .ProseMirror h1 {
   font-size: 32px;
-  margin: 0 0 16px;
+  margin: 0 0 14px;
   line-height: 1.2;
+  font-family: var(--theme-font-heading, var(--font-editor));
 }
 
 .page .ProseMirror h2 {
   font-size: 24px;
-  margin: 24px 0 12px;
+  margin: 20px 0 10px;
+  font-family: var(--theme-font-heading, var(--font-editor));
 }
 
 .page .ProseMirror ul {

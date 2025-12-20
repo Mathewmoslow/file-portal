@@ -7,7 +7,7 @@ import { ThreeMindMap } from './components/mindmap/ThreeMindMap';
 import { api } from './services/api';
 import { LogOut } from 'lucide-react';
 import { useFileStore } from './store/fileStore';
-import { ColorPanel } from './processor/editor/ColorPanel';
+import { ColorPanel, type ThemePalette } from './processor/editor/ColorPanel';
 import { CompanionPanel } from './processor/companion/CompanionPanel';
 import { EditorCanvas, type EditorHandle } from './processor/editor/EditorCanvas';
 import './App.css';
@@ -41,7 +41,13 @@ function App() {
   const [showPalette, setShowPalette] = useState(false);
   const [shareState, setShareState] = useState<{ url?: string; expiresIn?: string; loading?: boolean; error?: string }>({});
   const [zoom, setZoom] = useState(1);
-  const apiBase = (import.meta.env.VITE_API_URL || 'http://localhost:3001/api').replace(/\/$/, '');
+  const [theme, setTheme] = useState<ThemePalette>({
+    name: 'Office',
+    colors: ['#2f5597', '#ed7d31', '#70ad47', '#ffc000', '#4472c4', '#a5a5a5'],
+    fontBody: 'Inter Tight',
+    fontHeading: 'Inter Tight',
+  });
+  const apiBase = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
 
   useEffect(() => {
     // Check if already authenticated
@@ -316,15 +322,18 @@ const [newItemModal, setNewItemModal] = useState<{ open: boolean; type: 'file' |
                     <div className="processor-path">{activeFile || 'No document open'}</div>
                     {isUnsaved && <span className="unsaved-pill">Unsaved</span>}
                   </div>
-                  <div className="processor-actions">
-                    <button className="text-btn" onClick={handleProcessorSave} disabled={!activeFile}>Save</button>
-                    <button className="text-btn" onClick={handleProcessorPreview} disabled={!activeFile}>Preview</button>
-                    <button className="text-btn" onClick={() => handleProcessorShare('7d')} disabled={!activeFile}>Share</button>
-                    <button className="text-btn" onClick={() => setShowPalette((v) => !v)}>
-                      {showPalette ? 'Hide Palette' : 'View Palette'}
-                    </button>
-                    <select
-                      className="text-btn zoom-select"
+          <div className="processor-actions">
+            <button className="text-btn" onClick={handleProcessorSave} disabled={!activeFile}>Save</button>
+            <button className="text-btn" onClick={handleProcessorPreview} disabled={!activeFile}>Preview</button>
+            <button className="text-btn" onClick={() => handleProcessorShare('7d')} disabled={!activeFile}>Share</button>
+            <button className="text-btn" onClick={() => window.print()}>Print</button>
+            <button className="text-btn" onClick={handleExportDocx}>Export DOCX</button>
+            <button className="text-btn" onClick={handleExportPdf}>Export PDF</button>
+            <button className="text-btn" onClick={() => setShowPalette((v) => !v)}>
+              {showPalette ? 'Hide Palette' : 'View Palette'}
+            </button>
+            <select
+              className="text-btn zoom-select"
                       value={zoom}
                       onChange={(e) => setZoom(Number(e.target.value))}
                     >
@@ -338,14 +347,15 @@ const [newItemModal, setNewItemModal] = useState<{ open: boolean; type: 'file' |
                 <div className="processor-body">
                   <div className="processor-canvas">
                     {activeFile && !currentFile?.isBinary ? (
-                      <EditorCanvas
-                        ref={editorRef}
-                        swatchColor={swatchColor}
-                        onSwatchChange={setSwatchColor}
-                        content={currentContent}
-                        onContentChange={handleProcessorChange}
-                        zoom={zoom}
-                      />
+                    <EditorCanvas
+                      ref={editorRef}
+                      swatchColor={swatchColor}
+                      onSwatchChange={setSwatchColor}
+                      content={currentContent}
+                      onContentChange={handleProcessorChange}
+                      zoom={zoom}
+                      theme={theme}
+                    />
                     ) : (
                       <div className="editor-empty">
                         <div className="empty-state">
@@ -364,6 +374,7 @@ const [newItemModal, setNewItemModal] = useState<{ open: boolean; type: 'file' |
                             setSwatchColor(c);
                             editorRef.current?.applyColor(c);
                           }}
+                          onSelectTheme={(t) => setTheme(t)}
                         />
                       </div>
                     )}
@@ -441,3 +452,36 @@ const [newItemModal, setNewItemModal] = useState<{ open: boolean; type: 'file' |
 }
 
 export default App;
+  const handleExportDocx = async () => {
+    const html = editorRef.current?.getDocumentHtml ? editorRef.current.getDocumentHtml() : ''
+    if (!html) return
+    try {
+      const token = sessionStorage.getItem('token')
+      const res = await fetch(`${apiBase}/export/docx`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ html, filename: activeFile || 'document' }),
+      })
+      if (!res.ok) {
+        const err = await res.text()
+        throw new Error(err || `Export failed (${res.status})`)
+      }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = (activeFile?.split('/').pop() || 'document') + '.docx'
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (e: any) {
+      console.error(e)
+      alert(e?.message || 'Export failed')
+    }
+  }
+
+  const handleExportPdf = () => {
+    window.print()
+  }

@@ -11,6 +11,8 @@ import Color from '@tiptap/extension-color'
 import { TextStyle } from '@tiptap/extension-text-style'
 import Typography from '@tiptap/extension-typography'
 import CharacterCount from '@tiptap/extension-character-count'
+import HardBreak from '@tiptap/extension-hard-break'
+import { generateHTML } from '@tiptap/html'
 import { useCompanionStore } from '../store/companion'
 import {
   BoldOutlined,
@@ -41,12 +43,14 @@ interface EditorCanvasProps {
   content?: string
   onContentChange?: (html: string) => void
   zoom?: number
+  theme?: { name: string; colors: string[]; fontBody?: string; fontHeading?: string }
 }
 
 export interface EditorHandle {
   applyColor: (color: string) => void
   applyText: (text: string) => void
   getDocumentText: () => string
+  getDocumentHtml: () => string
 }
 
 const RibbonButton = ({
@@ -77,25 +81,35 @@ const RibbonButton = ({
 )
 
 function useRibbon(editor: Editor | null) {
-  const setAlign = (align: AlignOption) => editor?.chain().focus().setTextAlign(align).run()
+    const setAlign = (align: AlignOption) => editor?.chain().focus().setTextAlign(align).run()
 
-  return {
-    bold: () => editor?.chain().focus().toggleBold().run(),
-    italic: () => editor?.chain().focus().toggleItalic().run(),
-    underline: () => editor?.chain().focus().toggleUnderline().run(),
-    strike: () => editor?.chain().focus().toggleStrike().run(),
-    highlight: () => editor?.chain().focus().toggleHighlight({ color: '#ffeb3b66' }).run(),
-    alignLeft: () => setAlign('left'),
-    alignCenter: () => setAlign('center'),
-    alignRight: () => setAlign('right'),
-    alignJustify: () => setAlign('justify'),
-    bullet: () => editor?.chain().focus().toggleBulletList().run(),
-    ordered: () => editor?.chain().focus().toggleOrderedList().run(),
-    indent: () => editor?.chain().focus().sinkListItem('listItem').run(),
-    outdent: () => editor?.chain().focus().liftListItem('listItem').run(),
-    clearFormatting: () => editor?.chain().focus().unsetAllMarks().clearNodes().run(),
+    return {
+      bold: () => editor?.chain().focus().toggleBold().run(),
+      italic: () => editor?.chain().focus().toggleItalic().run(),
+      underline: () => editor?.chain().focus().toggleUnderline().run(),
+      strike: () => editor?.chain().focus().toggleStrike().run(),
+      highlight: () => editor?.chain().focus().toggleHighlight({ color: '#ffeb3b66' }).run(),
+      alignLeft: () => setAlign('left'),
+      alignCenter: () => setAlign('center'),
+      alignRight: () => setAlign('right'),
+      alignJustify: () => setAlign('justify'),
+      bullet: () => editor?.chain().focus().toggleBulletList().run(),
+      ordered: () => editor?.chain().focus().toggleOrderedList().run(),
+      indent: () => {
+        const isList = editor?.isActive('bulletList') || editor?.isActive('orderedList')
+        if (isList) return editor?.chain().focus().sinkListItem('listItem').run()
+        return editor?.chain().focus().setMark('textStyle', { marginLeft: `${indentLeft + 20}px` }).run()
+      },
+      outdent: () => {
+        const isList = editor?.isActive('bulletList') || editor?.isActive('orderedList')
+        if (isList) return editor?.chain().focus().liftListItem('listItem').run()
+        const next = Math.max(0, indentLeft - 20)
+        setIndentLeft(next)
+        return editor?.chain().focus().setMark('textStyle', { marginLeft: `${next}px` }).run()
+      },
+      clearFormatting: () => editor?.chain().focus().unsetAllMarks().clearNodes().run(),
+    }
   }
-}
 
 export const EditorCanvas = forwardRef<EditorHandle, EditorCanvasProps>(
   ({ isMobile, swatchColor, onSwatchChange, content, onContentChange, zoom = 1 }, ref) => {
@@ -120,6 +134,11 @@ export const EditorCanvas = forwardRef<EditorHandle, EditorCanvasProps>(
           heading: { levels: [1, 2, 3, 4] },
           bulletList: { keepMarks: true },
           orderedList: { keepMarks: true },
+          hardBreak: false,
+        }),
+        HardBreak.configure({
+          keepMarks: true,
+          HTMLAttributes: { class: 'soft-break' },
         }),
         Underline,
         Link.configure({ openOnClick: false }),
@@ -155,6 +174,16 @@ export const EditorCanvas = forwardRef<EditorHandle, EditorCanvasProps>(
           ed.state.doc.textBetween(from, to, ' ') ||
           ed.state.doc.textBetween(0, ed.state.doc.content.size, ' ')
         setSelectionPreview(text.slice(0, 500))
+        const attrs = ed.getAttributes('textStyle') || {}
+        if (attrs.fontFamily) setFontFamily(attrs.fontFamily)
+        if (attrs.fontSize) {
+          const num = Number.parseInt(String(attrs.fontSize).replace('px', ''), 10)
+          if (!Number.isNaN(num)) setFontSize(num)
+        }
+        if (attrs.textTransform === 'uppercase') setTextCase('uppercase')
+        else if (attrs.textTransform === 'lowercase') setTextCase('lowercase')
+        else if (attrs.fontVariant === 'small-caps') setTextCase('small-caps')
+        else setTextCase('none')
       }
       editor.on('selectionUpdate', handleSelection)
       return () => {
@@ -191,10 +220,10 @@ export const EditorCanvas = forwardRef<EditorHandle, EditorCanvasProps>(
     const attrs: Record<string, string> = {}
     if (value === 'uppercase' || value === 'lowercase') {
       attrs.textTransform = value
-      } else if (value === 'small-caps') {
-        attrs.fontVariant = 'small-caps'
-      } else {
-        attrs.textTransform = 'none'
+    } else if (value === 'small-caps') {
+      attrs.fontVariant = 'small-caps'
+    } else {
+      attrs.textTransform = 'none'
       attrs.fontVariant = 'normal'
     }
     editor?.chain().focus().setMark('textStyle', attrs).run()
@@ -206,9 +235,15 @@ export const EditorCanvas = forwardRef<EditorHandle, EditorCanvasProps>(
   }
 
     const applyIndentRight = (value: number) => {
-      setIndentRight(value)
-      editor?.chain().focus().setMark('textStyle', { marginRight: `${value}px` }).run()
-    }
+    setIndentRight(value)
+    editor?.chain().focus().setMark('textStyle', { marginRight: `${value}px` }).run()
+  }
+
+  const applyParagraphSpacing = (before: number, after: number, spacing: number) => {
+    setParaBefore(before)
+    setParaAfter(after)
+    setParaSpacing(spacing)
+  }
 
   useImperativeHandle(
     ref,
@@ -220,8 +255,9 @@ export const EditorCanvas = forwardRef<EditorHandle, EditorCanvasProps>(
       getDocumentText: () => {
         const doc = editor?.state.doc
         if (!doc) return ''
-        return doc.textBetween(0, doc.content.size, ' ')
+        return doc.textBetween(0, doc.content.size, '\n')
       },
+      getDocumentHtml: () => editor?.getHTML() || '',
     }),
     [editor],
   )
@@ -326,8 +362,8 @@ export const EditorCanvas = forwardRef<EditorHandle, EditorCanvasProps>(
             <RibbonButton label="Underline" icon={<UnderlineOutlined />} active={editor?.isActive('underline')} onClick={ribbon.underline} size={btnSize} />
             <RibbonButton label="Strikethrough" icon={<StrikethroughOutlined />} active={editor?.isActive('strike')} onClick={ribbon.strike} size={btnSize} />
             <RibbonButton label="Highlight" icon={<HighlightOutlined />} active={editor?.isActive('highlight')} onClick={ribbon.highlight} size={btnSize} />
-            <RibbonButton label="Superscript" icon={<FontSizeOutlined />} onClick={() => editor?.chain().focus().setMark('textStyle', { verticalAlign: 'super' }).run()} size={btnSize} />
-            <RibbonButton label="Subscript" icon={<FontSizeOutlined rotate={180} />} onClick={() => editor?.chain().focus().setMark('textStyle', { verticalAlign: 'sub' }).run()} size={btnSize} />
+            <RibbonButton label="Superscript" icon={<FontSizeOutlined />} active={editor?.getAttributes('textStyle')?.verticalAlign === 'super'} onClick={() => editor?.chain().focus().setMark('textStyle', { verticalAlign: 'super' }).run()} size={btnSize} />
+            <RibbonButton label="Subscript" icon={<FontSizeOutlined rotate={180} />} active={editor?.getAttributes('textStyle')?.verticalAlign === 'sub'} onClick={() => editor?.chain().focus().setMark('textStyle', { verticalAlign: 'sub' }).run()} size={btnSize} />
             <RibbonButton label="Text color" icon={<BgColorsOutlined />} onClick={() => applyColor(swatchColor)} size={btnSize} />
           </Space>
 
@@ -335,15 +371,15 @@ export const EditorCanvas = forwardRef<EditorHandle, EditorCanvasProps>(
 
           <div className="toolbar-group align-group">
             <Space className="toolbar-buttons" size={4} wrap>
-              <RibbonButton label="Align left" icon={<AlignLeftOutlined />} onClick={ribbon.alignLeft} size={btnSize} />
-              <RibbonButton label="Align center" icon={<AlignCenterOutlined />} onClick={ribbon.alignCenter} size={btnSize} />
-              <RibbonButton label="Align right" icon={<AlignRightOutlined />} onClick={ribbon.alignRight} size={btnSize} />
-              <RibbonButton label="Justify" icon={<ColumnWidthOutlined />} onClick={ribbon.alignJustify} size={btnSize} />
-              <RibbonButton label="Bullets" icon={<UnorderedListOutlined />} onClick={ribbon.bullet} size={btnSize} />
-              <RibbonButton label="Numbered" icon={<OrderedListOutlined />} onClick={ribbon.ordered} size={btnSize} />
-              <RibbonButton label="Indent" icon={<FieldBinaryOutlined />} onClick={ribbon.indent} size={btnSize} />
-              <RibbonButton label="Outdent" icon={<FieldBinaryOutlined rotate={180} />} onClick={ribbon.outdent} size={btnSize} />
-              <RibbonButton label="Clear" icon={<ClearOutlined />} onClick={ribbon.clearFormatting} size={btnSize} />
+            <RibbonButton label="Align left" icon={<AlignLeftOutlined />} active={editor?.isActive({ textAlign: 'left' })} onClick={ribbon.alignLeft} size={btnSize} />
+            <RibbonButton label="Align center" icon={<AlignCenterOutlined />} active={editor?.isActive({ textAlign: 'center' })} onClick={ribbon.alignCenter} size={btnSize} />
+            <RibbonButton label="Align right" icon={<AlignRightOutlined />} active={editor?.isActive({ textAlign: 'right' })} onClick={ribbon.alignRight} size={btnSize} />
+            <RibbonButton label="Justify" icon={<ColumnWidthOutlined />} active={editor?.isActive({ textAlign: 'justify' })} onClick={ribbon.alignJustify} size={btnSize} />
+            <RibbonButton label="Bullets" icon={<UnorderedListOutlined />} active={editor?.isActive('bulletList')} onClick={ribbon.bullet} size={btnSize} />
+            <RibbonButton label="Numbered" icon={<OrderedListOutlined />} active={editor?.isActive('orderedList')} onClick={ribbon.ordered} size={btnSize} />
+            <RibbonButton label="Indent" icon={<FieldBinaryOutlined />} onClick={ribbon.indent} size={btnSize} />
+            <RibbonButton label="Outdent" icon={<FieldBinaryOutlined rotate={180} />} onClick={ribbon.outdent} size={btnSize} />
+            <RibbonButton label="Clear" icon={<ClearOutlined />} onClick={ribbon.clearFormatting} size={btnSize} />
             </Space>
           </div>
           <div className="toolbar-group align-group-pop">
@@ -433,6 +469,14 @@ export const EditorCanvas = forwardRef<EditorHandle, EditorCanvasProps>(
                 '--para-after': `${paraAfter}px`,
                 '--hyphenate': hyphenate ? 'auto' : 'manual',
                 '--zoom': zoom,
+                '--theme-accent1': theme?.colors?.[0] || '#2f5597',
+                '--theme-accent2': theme?.colors?.[1] || '#ed7d31',
+                '--theme-accent3': theme?.colors?.[2] || '#70ad47',
+                '--theme-accent4': theme?.colors?.[3] || '#ffc000',
+                '--theme-accent5': theme?.colors?.[4] || '#4472c4',
+                '--theme-accent6': theme?.colors?.[5] || '#a5a5a5',
+                '--theme-font-body': theme?.fontBody || 'Inter Tight',
+                '--theme-font-heading': theme?.fontHeading || 'Inter Tight',
               } as React.CSSProperties
             }
           >
