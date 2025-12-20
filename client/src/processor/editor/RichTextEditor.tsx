@@ -23,6 +23,14 @@ import {
   TextField,
   Typography,
   Chip,
+  CircularProgress,
+  Grid,
+  Card,
+  CardMedia,
+  CardContent,
+  CardActionArea,
+  Alert,
+  InputAdornment,
 } from '@mui/material'
 import {
   FormatBold,
@@ -73,6 +81,7 @@ import {
   FileDownload,
   PictureAsPdf,
   ZoomIn,
+  Search,
 } from '@mui/icons-material'
 
 export interface RichTextHandle {
@@ -134,6 +143,10 @@ const RichTextEditor = forwardRef<RichTextHandle, RichTextEditorProps>(function 
   const [shareMenuAnchor, setShareMenuAnchor] = useState<HTMLButtonElement | null>(null)
   const [isEditingName, setIsEditingName] = useState(false)
   const [editedName, setEditedName] = useState('')
+  const [imageSearchQuery, setImageSearchQuery] = useState('')
+  const [imageSearchResults, setImageSearchResults] = useState<any[]>([])
+  const [imageSearchLoading, setImageSearchLoading] = useState(false)
+  const [imageSearchError, setImageSearchError] = useState<string | null>(null)
   const lastHtmlRef = useRef<string>('') // prevent update loops
   const onChangeRef = useRef(onChange) // stable ref for onChange callback
   const initializedRef = useRef(false) // track if editor has been initialized
@@ -189,6 +202,46 @@ const RichTextEditor = forwardRef<RichTextHandle, RichTextEditorProps>(function 
       onRename(editedName.trim())
     }
     setIsEditingName(false)
+  }
+
+  // Image search handler
+  const handleImageSearch = async (query: string) => {
+    if (!query.trim()) return
+    setImageSearchLoading(true)
+    setImageSearchError(null)
+    setImageSearchResults([])
+
+    try {
+      const apiBase = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '')
+      const res = await fetch(`${apiBase}/images/search?q=${encodeURIComponent(query)}&per_page=20`)
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}))
+        throw new Error(errData.error || `Search failed (${res.status})`)
+      }
+      const data = await res.json()
+      setImageSearchResults(data.results || [])
+    } catch (err: any) {
+      console.error('Image search error:', err)
+      setImageSearchError(err?.message || 'Search failed')
+    } finally {
+      setImageSearchLoading(false)
+    }
+  }
+
+  // Insert image from search results
+  const insertSearchImage = (img: { url: string; alt: string; credit: string; creditUrl: string }) => {
+    const imgHTML = `
+      <figure style="margin: 15px 0; text-align: center;">
+        <img src="${img.url}" alt="${img.alt}" style="max-width: 100%; height: auto; border-radius: 4px;">
+        <figcaption style="font-size: 12px; color: #666; margin-top: 8px;">
+          Photo by <a href="${img.creditUrl}" target="_blank" rel="noopener noreferrer">${img.credit}</a> on Unsplash
+        </figcaption>
+      </figure>
+    `
+    execCommand('insertHTML', imgHTML)
+    setImageSearchOpen(false)
+    setImageSearchQuery('')
+    setImageSearchResults([])
   }
 
   const execCommand = (command: string, value?: string) => {
@@ -720,9 +773,9 @@ const RichTextEditor = forwardRef<RichTextHandle, RichTextEditorProps>(function 
               <Rectangle />
             </IconButton>
           </Tooltip>
-          <Tooltip title="Medical Images">
-            <Button size="small" startIcon={<Science />} onClick={() => setImageSearchOpen(true)} variant="outlined">
-              NIH Images
+          <Tooltip title="Search Images">
+            <Button size="small" startIcon={<Image />} onClick={() => setImageSearchOpen(true)} variant="outlined">
+              Images
             </Button>
           </Tooltip>
           <Divider orientation="vertical" flexItem />
@@ -918,31 +971,98 @@ const RichTextEditor = forwardRef<RichTextHandle, RichTextEditorProps>(function 
       </Menu>
 
       <Dialog open={imageSearchOpen} onClose={() => setImageSearchOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle>Search NIH Medical Images</DialogTitle>
+        <DialogTitle>Search Medical Images</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Search for medical images from NIH Open Access collection. Enter medical terms like "heart anatomy", "diabetes pathophysiology", etc.
+            Search for medical and educational images. Enter terms like "heart anatomy", "medical diagram", "biology", etc.
           </Typography>
           <TextField
             fullWidth
-            label="Search medical images"
-            placeholder="e.g., heart anatomy, pneumonia x-ray, pediatric development"
+            label="Search images"
+            placeholder="e.g., heart anatomy, medical diagram, biology"
+            value={imageSearchQuery}
+            onChange={(e) => setImageSearchQuery(e.target.value)}
             sx={{ mb: 2 }}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    onClick={() => handleImageSearch(imageSearchQuery)}
+                    disabled={imageSearchLoading || !imageSearchQuery.trim()}
+                  >
+                    {imageSearchLoading ? <CircularProgress size={20} /> : <Search />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
             onKeyPress={(e) => {
               if (e.key === 'Enter') {
-                const searchTerm = (e.target as HTMLInputElement).value
-                if (searchTerm) {
-                  alert(`Search functionality will be implemented. You searched for: "${searchTerm}"`)
-                }
+                handleImageSearch(imageSearchQuery)
               }
             }}
           />
-          <Typography variant="body2" color="text.secondary">
-            Press Enter to search. This feature searches the NIH Open Access database for educational medical images that can be used in your notes.
-          </Typography>
+
+          {imageSearchError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {imageSearchError}
+            </Alert>
+          )}
+
+          {imageSearchLoading && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <CircularProgress />
+            </Box>
+          )}
+
+          {!imageSearchLoading && imageSearchResults.length > 0 && (
+            <Grid container spacing={2}>
+              {imageSearchResults.map((img) => (
+                <Grid item xs={6} sm={4} md={3} key={img.id}>
+                  <Card sx={{ height: '100%' }}>
+                    <CardActionArea onClick={() => insertSearchImage(img)}>
+                      <CardMedia
+                        component="img"
+                        height="120"
+                        image={img.thumb}
+                        alt={img.alt}
+                        sx={{ objectFit: 'cover' }}
+                      />
+                      <CardContent sx={{ p: 1 }}>
+                        <Typography variant="caption" noWrap title={img.alt}>
+                          {img.alt || 'Image'}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" display="block" noWrap>
+                          by {img.credit}
+                        </Typography>
+                      </CardContent>
+                    </CardActionArea>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+          )}
+
+          {!imageSearchLoading && imageSearchResults.length === 0 && imageSearchQuery && !imageSearchError && (
+            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+              No images found. Try different search terms.
+            </Typography>
+          )}
+
+          {!imageSearchQuery && imageSearchResults.length === 0 && (
+            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+              Enter a search term and press Enter or click the search icon to find images.
+            </Typography>
+          )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setImageSearchOpen(false)}>Close</Button>
+          <Button onClick={() => {
+            setImageSearchOpen(false)
+            setImageSearchQuery('')
+            setImageSearchResults([])
+            setImageSearchError(null)
+          }}>
+            Close
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>
