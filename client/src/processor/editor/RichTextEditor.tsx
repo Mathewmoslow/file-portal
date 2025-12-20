@@ -96,6 +96,8 @@ interface RichTextEditorProps {
   onExportPdf?: () => void
   zoom?: number
   onZoomChange?: (zoom: number) => void
+  onRename?: (newName: string) => void
+  onSelectionChange?: (selectedText: string) => void
 }
 
 const fontFamilies = ['Arial', 'Times New Roman', 'Georgia', 'Verdana', 'Helvetica', 'Courier New', 'Comic Sans MS', 'Impact', 'Lucida Console', 'Tahoma', 'Trebuchet MS', 'Palatino']
@@ -112,7 +114,7 @@ const colors = [
 ]
 
 const RichTextEditor = forwardRef<RichTextHandle, RichTextEditorProps>(function RichTextEditor(
-  { initialContent, onSave, onPrint, onChange, fileName, isUnsaved, onPreview, onShare, onExportDocx, onExportPdf, zoom = 1, onZoomChange },
+  { initialContent, onSave, onPrint, onChange, fileName, isUnsaved, onPreview, onShare, onExportDocx, onExportPdf, zoom = 1, onZoomChange, onRename, onSelectionChange },
   ref,
 ) {
   const editorRef = useRef<HTMLDivElement>(null)
@@ -130,6 +132,8 @@ const RichTextEditor = forwardRef<RichTextHandle, RichTextEditorProps>(function 
   const [medicalMenuAnchor, setMedicalMenuAnchor] = useState<HTMLButtonElement | null>(null)
   const [imageSearchOpen, setImageSearchOpen] = useState(false)
   const [shareMenuAnchor, setShareMenuAnchor] = useState<HTMLButtonElement | null>(null)
+  const [isEditingName, setIsEditingName] = useState(false)
+  const [editedName, setEditedName] = useState('')
   const lastHtmlRef = useRef<string>('') // prevent update loops
   const onChangeRef = useRef(onChange) // stable ref for onChange callback
   const initializedRef = useRef(false) // track if editor has been initialized
@@ -155,6 +159,37 @@ const RichTextEditor = forwardRef<RichTextHandle, RichTextEditorProps>(function 
       }
     }
   }, [initialContent]) // Remove onChange from deps - use ref instead
+
+  // Handle selection changes to sync with companion
+  useEffect(() => {
+    const handleSelectionChange = () => {
+      const selection = window.getSelection()
+      if (selection && editorRef.current?.contains(selection.anchorNode)) {
+        const selectedText = selection.toString().trim()
+        if (selectedText && onSelectionChange) {
+          onSelectionChange(selectedText)
+        }
+      }
+    }
+    document.addEventListener('selectionchange', handleSelectionChange)
+    return () => document.removeEventListener('selectionchange', handleSelectionChange)
+  }, [onSelectionChange])
+
+  // Rename handlers
+  const handleStartRename = () => {
+    if (fileName) {
+      const baseName = fileName.split('/').pop() || ''
+      setEditedName(baseName)
+      setIsEditingName(true)
+    }
+  }
+
+  const handleFinishRename = () => {
+    if (editedName.trim() && onRename) {
+      onRename(editedName.trim())
+    }
+    setIsEditingName(false)
+  }
 
   const execCommand = (command: string, value?: string) => {
     document.execCommand(command, false, value)
@@ -434,13 +469,53 @@ const RichTextEditor = forwardRef<RichTextHandle, RichTextEditorProps>(function 
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <Paper elevation={1} sx={{ p: 1, borderRadius: 0 }}>
+      <Paper
+        elevation={3}
+        className="editor-toolbar no-print"
+        sx={{
+          p: 1,
+          borderRadius: 0,
+          borderBottom: '2px solid #e0e0e0',
+          backgroundColor: '#fafafa',
+          position: 'sticky',
+          top: 0,
+          zIndex: 10
+        }}
+      >
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
-          {/* File info */}
-          {fileName && (
-            <Typography variant="body2" sx={{ fontWeight: 500, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {fileName.split('/').pop()}
-            </Typography>
+          {/* File info - clickable to rename */}
+          {fileName && !isEditingName && (
+            <Tooltip title="Click to rename">
+              <Typography
+                variant="body2"
+                onClick={onRename ? handleStartRename : undefined}
+                sx={{
+                  fontWeight: 500,
+                  maxWidth: 200,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  cursor: onRename ? 'pointer' : 'default',
+                  '&:hover': onRename ? { textDecoration: 'underline' } : {}
+                }}
+              >
+                {fileName.split('/').pop()}
+              </Typography>
+            </Tooltip>
+          )}
+          {isEditingName && (
+            <TextField
+              size="small"
+              value={editedName}
+              onChange={(e) => setEditedName(e.target.value)}
+              onBlur={handleFinishRename}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleFinishRename()
+                if (e.key === 'Escape') setIsEditingName(false)
+              }}
+              autoFocus
+              sx={{ width: 200 }}
+            />
           )}
           {isUnsaved && <Chip label="Unsaved" size="small" color="warning" sx={{ height: 20 }} />}
           {fileName && <Divider orientation="vertical" flexItem />}

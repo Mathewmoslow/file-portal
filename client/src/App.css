@@ -344,7 +344,9 @@
   .statusbar,
   .view-switch,
   .header-actions,
-  .header-right {
+  .header-right,
+  .no-print,
+  .editor-toolbar {
     display: none !important;
   }
   .app,

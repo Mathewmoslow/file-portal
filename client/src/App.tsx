@@ -7,6 +7,7 @@ import { ThreeMindMap } from './components/mindmap/ThreeMindMap';
 import { api } from './services/api';
 import { LogOut } from 'lucide-react';
 import { useFileStore } from './store/fileStore';
+import { useCompanionStore } from './processor/store/companion';
 import { CompanionPanel } from './processor/companion/CompanionPanel';
 import RichTextEditor, { type RichTextHandle } from './processor/editor/RichTextEditor';
 import './App.css';
@@ -33,7 +34,9 @@ function App() {
     unsavedFiles,
     updateFileContent,
     saveFile,
+    renamePath,
   } = useFileStore();
+  const { setSelectionPreview } = useCompanionStore();
   const editorRef = useRef<RichTextHandle | null>(null);
   const uploadInputRef = useRef<HTMLInputElement | null>(null);
   const [shareState, setShareState] = useState<{ url?: string; expiresIn?: string; loading?: boolean; error?: string }>({});
@@ -171,7 +174,7 @@ const [newItemModal, setNewItemModal] = useState<{ open: boolean; type: 'file' |
 
   const handleNewDocument = async () => {
     const base = currentPath || '/';
-    const name = `untitled-${Date.now()}.html`;
+    const name = `untitled-${Date.now()}.docx`;
     const targetPath = normalizePath(base, name);
     await createFile(targetPath, '<p></p>');
     await handleOpenFile(targetPath);
@@ -245,6 +248,20 @@ const [newItemModal, setNewItemModal] = useState<{ open: boolean; type: 'file' |
   const handleExportPdf = () => {
     window.print()
   }
+
+  const handleRename = async (newName: string) => {
+    if (!activeFile) return;
+    const dir = activeFile.substring(0, activeFile.lastIndexOf('/'));
+    const newPath = dir ? `${dir}/${newName}` : `/${newName}`;
+    try {
+      await renamePath(activeFile, newPath);
+      await loadFileTree(currentPath || '/');
+      await openFile(newPath);
+    } catch (e: any) {
+      console.error('Rename failed:', e);
+      alert(e?.message || 'Rename failed');
+    }
+  };
 
   return (
     <div className="app" ref={appRef}>
@@ -365,6 +382,8 @@ const [newItemModal, setNewItemModal] = useState<{ open: boolean; type: 'file' |
                         onExportPdf={handleExportPdf}
                         zoom={zoom}
                         onZoomChange={setZoom}
+                        onRename={handleRename}
+                        onSelectionChange={setSelectionPreview}
                       />
                     ) : (
                       <div className="editor-empty">

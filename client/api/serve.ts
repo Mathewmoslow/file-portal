@@ -121,10 +121,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Read and serve file
     const buffer = await readFileBuffer(normalized);
-    const mimeType = getMimeType(normalized);
+    let mimeType = getMimeType(normalized);
+    const ext = path.extname(normalized).toLowerCase();
 
-    // For HTML files with a share token, rewrite relative URLs
-    if (shareToken && (mimeType === 'text/html') && tokenBasePath) {
+    // For .docx files in our processor, they contain HTML - serve as HTML for preview
+    const isProcessorDoc = ['.docx', '.doc'].includes(ext);
+    if (isProcessorDoc) {
+      const content = buffer.toString('utf-8');
+      // Check if it's HTML content (our processor format)
+      if (content.trim().startsWith('<') || content.includes('<p>') || content.includes('<div>')) {
+        mimeType = 'text/html';
+      }
+    }
+
+    // For HTML files (or .docx with HTML content), rewrite relative URLs if share token
+    if (shareToken && mimeType === 'text/html' && tokenBasePath) {
       const html = buffer.toString('utf-8');
       const rewrittenHtml = rewriteHtmlUrls(html, normalized, shareToken);
 
