@@ -114,27 +114,34 @@ const RichTextEditor = forwardRef<RichTextHandle, RichTextEditorProps>(function 
   const [redoStack, setRedoStack] = useState<string[]>([])
   const [medicalMenuAnchor, setMedicalMenuAnchor] = useState<HTMLButtonElement | null>(null)
   const [imageSearchOpen, setImageSearchOpen] = useState(false)
+  const lastHtmlRef = useRef<string>('') // prevent update loops
 
   useEffect(() => {
     if (editorRef.current) {
-      editorRef.current.innerHTML = initialContent || ''
-      saveToUndoStack()
-      onChange?.(editorRef.current.innerHTML)
+      const incoming = initialContent || ''
+      if (editorRef.current.innerHTML !== incoming) {
+        editorRef.current.innerHTML = incoming
+        lastHtmlRef.current = incoming
+        saveToUndoStack(false)
+        onChange?.(incoming)
+      }
     }
   }, [initialContent, onChange])
 
   const execCommand = (command: string, value?: string) => {
     document.execCommand(command, false, value)
     editorRef.current?.focus()
-    saveToUndoStack()
-    if (editorRef.current) onChange?.(editorRef.current.innerHTML)
+    saveToUndoStack(true)
   }
 
-  const saveToUndoStack = () => {
+  const saveToUndoStack = (emit = true) => {
     if (editorRef.current) {
-      setUndoStack((prev) => [...prev.slice(-49), editorRef.current!.innerHTML])
+      const html = editorRef.current.innerHTML
+      if (html === lastHtmlRef.current) return
+      lastHtmlRef.current = html
+      setUndoStack((prev) => [...prev.slice(-49), html])
       setRedoStack([])
-      onChange?.(editorRef.current.innerHTML)
+      if (emit) onChange?.(html)
     }
   }
 
@@ -231,7 +238,9 @@ const RichTextEditor = forwardRef<RichTextHandle, RichTextEditorProps>(function 
 
   const handleSave = () => {
     if (editorRef.current) {
-      onSave(editorRef.current.innerHTML)
+      const html = editorRef.current.innerHTML
+      lastHtmlRef.current = html
+      onSave(html)
     }
   }
 
@@ -578,7 +587,7 @@ const RichTextEditor = forwardRef<RichTextHandle, RichTextEditorProps>(function 
         ref={editorRef}
         contentEditable
         suppressContentEditableWarning
-        onInput={saveToUndoStack}
+        onInput={() => saveToUndoStack(true)}
         sx={{
           flex: 1,
           p: 3,
