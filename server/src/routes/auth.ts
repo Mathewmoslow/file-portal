@@ -3,8 +3,9 @@ import { CryptoService } from '../utils/crypto.js';
 
 const router = Router();
 
-// Simple password check (for MVP - in production use database)
-const STORED_PASSWORD = process.env.PASSWORD || 'demo123';
+// Prefer a bcrypt hash when provided; otherwise fall back to plain text password
+const STORED_PASSWORD = (process.env.PASSWORD || 'demo123').trim();
+const STORED_PASSWORD_HASH = process.env.PASSWORD_HASH?.trim();
 
 // Login endpoint
 router.post('/login', async (req: Request, res: Response) => {
@@ -21,8 +22,15 @@ router.post('/login', async (req: Request, res: Response) => {
       });
     }
 
-    // Simple password check (for MVP)
-    if (password !== STORED_PASSWORD) {
+    let isValid = false;
+
+    if (STORED_PASSWORD_HASH) {
+      isValid = await CryptoService.verifyPassword(password, STORED_PASSWORD_HASH);
+    } else {
+      isValid = password === STORED_PASSWORD;
+    }
+
+    if (!isValid) {
       return res.status(401).json({
         success: false,
         error: {
