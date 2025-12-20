@@ -7,7 +7,8 @@ class ApiService {
 
   constructor() {
     this.client = axios.create({
-      baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3001/api',
+      // Default to same-origin /api (Vercel or proxy); override with VITE_API_URL for custom hosts
+      baseURL: import.meta.env.VITE_API_URL || '/api',
       timeout: 30000,
     });
 

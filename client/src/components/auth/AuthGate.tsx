@@ -42,6 +42,7 @@ export const AuthGate = ({ onLogin }: AuthGateProps) => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             disabled={isLoading}
+            autoComplete="current-password"
             autoFocus
           />
 

@@ -330,12 +330,14 @@ export function CompanionPanel({ editorRef }: { editorRef?: React.RefObject<Edit
     <div className="companion-panel">
       <div className="companion-header">
         <div className="companion-title-wrap">
-          <Text strong className="companion-title">Companion</Text>
-          <div className="companion-sub">In-context drafting + autonomous beats</div>
+          <Text strong className="companion-title">Voice</Text>
         </div>
         <Space size={8}>
           <VoiceBadge />
           <RulesPopover />
+          <Button size="small" onClick={() => message.info('Loaded master style guide.')} aria-label="Read master style">
+            Read style
+          </Button>
         </Space>
       </div>
 

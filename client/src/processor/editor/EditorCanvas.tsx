@@ -112,7 +112,7 @@ function useRibbon(editor: Editor | null) {
   }
 
 export const EditorCanvas = forwardRef<EditorHandle, EditorCanvasProps>(
-  ({ isMobile, swatchColor, onSwatchChange, content, onContentChange, zoom = 1 }, ref) => {
+  ({ isMobile, swatchColor, onSwatchChange, content, onContentChange, zoom = 1, theme }, ref) => {
     const btnSize: 'small' | 'middle' = isMobile ? 'small' : 'middle'
     const initialized = useRef(false)
     const [lineHeight, setLineHeight] = useState(1.6)
