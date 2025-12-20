@@ -22,6 +22,7 @@ import {
   DialogActions,
   TextField,
   Typography,
+  Chip,
 } from '@mui/material'
 import {
   FormatBold,
@@ -67,6 +68,11 @@ import {
   Assignment,
   Biotech,
   Psychology,
+  Visibility,
+  Share,
+  FileDownload,
+  PictureAsPdf,
+  ZoomIn,
 } from '@mui/icons-material'
 
 export interface RichTextHandle {
@@ -81,6 +87,15 @@ interface RichTextEditorProps {
   onSave: (content: string) => void
   onPrint?: () => void
   onChange?: (content: string) => void
+  // New props for consolidated toolbar
+  fileName?: string
+  isUnsaved?: boolean
+  onPreview?: () => void
+  onShare?: (expiresIn: string) => void
+  onExportDocx?: () => void
+  onExportPdf?: () => void
+  zoom?: number
+  onZoomChange?: (zoom: number) => void
 }
 
 const fontFamilies = ['Arial', 'Times New Roman', 'Georgia', 'Verdana', 'Helvetica', 'Courier New', 'Comic Sans MS', 'Impact', 'Lucida Console', 'Tahoma', 'Trebuchet MS', 'Palatino']
@@ -97,7 +112,7 @@ const colors = [
 ]
 
 const RichTextEditor = forwardRef<RichTextHandle, RichTextEditorProps>(function RichTextEditor(
-  { initialContent, onSave, onPrint, onChange },
+  { initialContent, onSave, onPrint, onChange, fileName, isUnsaved, onPreview, onShare, onExportDocx, onExportPdf, zoom = 1, onZoomChange },
   ref,
 ) {
   const editorRef = useRef<HTMLDivElement>(null)
@@ -114,6 +129,7 @@ const RichTextEditor = forwardRef<RichTextHandle, RichTextEditorProps>(function 
   const [redoStack, setRedoStack] = useState<string[]>([])
   const [medicalMenuAnchor, setMedicalMenuAnchor] = useState<HTMLButtonElement | null>(null)
   const [imageSearchOpen, setImageSearchOpen] = useState(false)
+  const [shareMenuAnchor, setShareMenuAnchor] = useState<HTMLButtonElement | null>(null)
   const lastHtmlRef = useRef<string>('') // prevent update loops
   const onChangeRef = useRef(onChange) // stable ref for onChange callback
   const initializedRef = useRef(false) // track if editor has been initialized
@@ -420,6 +436,14 @@ const RichTextEditor = forwardRef<RichTextHandle, RichTextEditorProps>(function 
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Paper elevation={1} sx={{ p: 1, borderRadius: 0 }}>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
+          {/* File info */}
+          {fileName && (
+            <Typography variant="body2" sx={{ fontWeight: 500, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {fileName.split('/').pop()}
+            </Typography>
+          )}
+          {isUnsaved && <Chip label="Unsaved" size="small" color="warning" sx={{ height: 20 }} />}
+          {fileName && <Divider orientation="vertical" flexItem />}
           <Tooltip title="Undo">
             <IconButton onClick={handleUndo} size="small">
               <Undo />
@@ -441,6 +465,46 @@ const RichTextEditor = forwardRef<RichTextHandle, RichTextEditorProps>(function 
               <Print />
             </IconButton>
           </Tooltip>
+          {onPreview && (
+            <Tooltip title="Preview">
+              <IconButton onClick={onPreview} size="small">
+                <Visibility />
+              </IconButton>
+            </Tooltip>
+          )}
+          {onShare && (
+            <Tooltip title="Share">
+              <IconButton onClick={(e) => setShareMenuAnchor(e.currentTarget)} size="small">
+                <Share />
+              </IconButton>
+            </Tooltip>
+          )}
+          {onExportDocx && (
+            <Tooltip title="Export DOCX">
+              <IconButton onClick={onExportDocx} size="small">
+                <FileDownload />
+              </IconButton>
+            </Tooltip>
+          )}
+          {onExportPdf && (
+            <Tooltip title="Export PDF">
+              <IconButton onClick={onExportPdf} size="small">
+                <PictureAsPdf />
+              </IconButton>
+            </Tooltip>
+          )}
+          {onZoomChange && (
+            <>
+              <Divider orientation="vertical" flexItem />
+              <FormControl size="small" sx={{ minWidth: 80 }}>
+                <Select value={zoom} onChange={(e) => onZoomChange(Number(e.target.value))} displayEmpty>
+                  {[0.75, 1, 1.25, 1.5].map((z) => (
+                    <MenuItem key={z} value={z}>{Math.round(z * 100)}%</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </>
+          )}
           <Divider orientation="vertical" flexItem />
           <FormControl size="small" sx={{ minWidth: 140 }}>
             <Select value={fontFamily} onChange={(e) => handleFontFamily(e.target.value)} displayEmpty>
@@ -755,6 +819,26 @@ const RichTextEditor = forwardRef<RichTextHandle, RichTextEditorProps>(function 
             <Psychology sx={{ color: '#e74c3c' }} />
           </ListItemIcon>
           <ListItemText>Subsection</ListItemText>
+        </MuiMenuItem>
+      </Menu>
+
+      {/* Share menu */}
+      <Menu anchorEl={shareMenuAnchor} open={Boolean(shareMenuAnchor)} onClose={() => setShareMenuAnchor(null)}>
+        <MuiMenuItem onClick={() => { onShare?.('1h'); setShareMenuAnchor(null); }}>
+          <ListItemText>1 Hour</ListItemText>
+        </MuiMenuItem>
+        <MuiMenuItem onClick={() => { onShare?.('24h'); setShareMenuAnchor(null); }}>
+          <ListItemText>24 Hours</ListItemText>
+        </MuiMenuItem>
+        <MuiMenuItem onClick={() => { onShare?.('7d'); setShareMenuAnchor(null); }}>
+          <ListItemText>7 Days</ListItemText>
+        </MuiMenuItem>
+        <MuiMenuItem onClick={() => { onShare?.('30d'); setShareMenuAnchor(null); }}>
+          <ListItemText>30 Days</ListItemText>
+        </MuiMenuItem>
+        <Divider />
+        <MuiMenuItem onClick={() => { onShare?.('never'); setShareMenuAnchor(null); }}>
+          <ListItemText>Never Expire</ListItemText>
         </MuiMenuItem>
       </Menu>
 
