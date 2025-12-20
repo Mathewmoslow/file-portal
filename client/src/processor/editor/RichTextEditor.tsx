@@ -115,18 +115,30 @@ const RichTextEditor = forwardRef<RichTextHandle, RichTextEditorProps>(function 
   const [medicalMenuAnchor, setMedicalMenuAnchor] = useState<HTMLButtonElement | null>(null)
   const [imageSearchOpen, setImageSearchOpen] = useState(false)
   const lastHtmlRef = useRef<string>('') // prevent update loops
+  const onChangeRef = useRef(onChange) // stable ref for onChange callback
+  const initializedRef = useRef(false) // track if editor has been initialized
+
+  // Keep onChange ref current without triggering re-renders
+  useEffect(() => {
+    onChangeRef.current = onChange
+  }, [onChange])
 
   useEffect(() => {
     if (editorRef.current) {
       const incoming = initialContent || ''
-      if (editorRef.current.innerHTML !== incoming) {
+      // Only update if content actually changed and not just a re-render
+      if (editorRef.current.innerHTML !== incoming && lastHtmlRef.current !== incoming) {
         editorRef.current.innerHTML = incoming
         lastHtmlRef.current = incoming
-        saveToUndoStack(false)
-        onChange?.(incoming)
+        // Only emit change after initial load, not during first render
+        if (initializedRef.current) {
+          saveToUndoStack(false)
+        } else {
+          initializedRef.current = true
+        }
       }
     }
-  }, [initialContent, onChange])
+  }, [initialContent]) // Remove onChange from deps - use ref instead
 
   const execCommand = (command: string, value?: string) => {
     document.execCommand(command, false, value)
@@ -141,7 +153,7 @@ const RichTextEditor = forwardRef<RichTextHandle, RichTextEditorProps>(function 
       lastHtmlRef.current = html
       setUndoStack((prev) => [...prev.slice(-49), html])
       setRedoStack([])
-      if (emit) onChange?.(html)
+      if (emit) onChangeRef.current?.(html)
     }
   }
 

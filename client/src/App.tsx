@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { AuthGate } from './components/auth/AuthGate';
 import { FileTree } from './components/explorer/FileTree';
 import { CodeEditor } from './components/editor/CodeEditor';
@@ -191,11 +191,11 @@ const [newItemModal, setNewItemModal] = useState<{ open: boolean; type: 'file' |
   const currentContent = currentFile?.content ?? '';
   const isUnsaved = activeFile ? unsavedFiles.has(activeFile) : false;
 
-  const handleProcessorChange = (html: string) => {
+  const handleProcessorChange = useCallback((html: string) => {
     if (activeFile) {
       updateFileContent(activeFile, html);
     }
-  };
+  }, [activeFile, updateFileContent]);
 
   const handleProcessorSave = async () => {
     if (activeFile && currentContent !== undefined) {

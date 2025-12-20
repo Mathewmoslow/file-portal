@@ -203,8 +203,19 @@ export class FileController {
       }
       if (!authorized && shareToken) {
         const decoded = CryptoService.verifyToken(shareToken)
-        if (decoded?.path && decoded.path === req.query.path) {
-          authorized = true
+        if (decoded?.path) {
+          const sharedPath = decoded.path as string
+          const requestedPath = req.query.path as string
+          // Exact match for the shared file
+          if (sharedPath === requestedPath) {
+            authorized = true
+          } else {
+            // Allow access to assets in same directory or subdirectories (for HTML asset loading)
+            const sharedDir = sharedPath.substring(0, sharedPath.lastIndexOf('/'))
+            if (requestedPath.startsWith(sharedDir + '/')) {
+              authorized = true
+            }
+          }
         }
       }
       if (!authorized) {
@@ -216,14 +227,15 @@ export class FileController {
       const ext = path.extname(remote).toLowerCase()
       let body = buf
       let contentType = mimeTypes[ext] || 'application/octet-stream'
-      // Basic relative asset rewrite for HTML
+      // Basic relative asset rewrite for HTML - pass through auth token for assets
       if (ext === '.html' || ext === '.htm') {
         const html = buf.toString('utf-8')
         const baseDir = remote.substring(0, remote.lastIndexOf('/'))
+        const tokenParam = bearer ? `&token=${bearer}` : (shareToken ? `&token=${shareToken}` : '')
         const rewrite = html.replace(/(src|href)=\"(?!https?:)([^\"#]+)\"/g, (_m, attr, val) => {
           const target = val.startsWith('/') ? val : `${baseDir}/${val}`
           const encoded = encodeURIComponent(target.replace(SFTP_BASE, ''))
-          return `${attr}="/api/serve?path=${encoded}"`
+          return `${attr}="/api/serve?path=${encoded}${tokenParam}"`
         })
         body = Buffer.from(rewrite, 'utf-8')
         contentType = 'text/html'
