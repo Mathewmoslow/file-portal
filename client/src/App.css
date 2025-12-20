@@ -333,38 +333,60 @@
   padding: 6px 10px;
 }
 
-/* Print adjustments */
+/* Print adjustments - visibility approach for clean output */
 @media print {
+  /* Hide everything first */
+  body,
+  body * {
+    visibility: hidden;
+  }
+
+  /* Show only the page content */
+  .page,
+  .page * {
+    visibility: visible;
+  }
+
+  /* Position page at top left */
+  .page {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 8.5in !important;
+    min-height: 11in !important;
+    padding: 0.75in 1in !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    transform: none !important;
+    background: white !important;
+    background-image: none !important;
+  }
+
+  /* Reset page-wrap for print */
+  .page-wrap {
+    position: static;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    overflow: visible !important;
+  }
+
+  /* Ensure images print properly */
+  .page img {
+    max-width: 100% !important;
+    page-break-inside: avoid;
+  }
+
+  /* Hide UI elements completely */
   .app-header,
   .sidebar,
   .resizer,
-  .processor-actions,
-  .toolbar,
   .processor-rail,
-  .statusbar,
-  .view-switch,
-  .header-actions,
-  .header-right,
+  .editor-toolbar,
   .no-print,
-  .editor-toolbar {
+  .share-banner {
     display: none !important;
-  }
-  .app,
-  .main-content,
-  .processor-view,
-  .processor-body,
-  .processor-canvas,
-  .page-wrap {
-    padding: 0 !important;
-    margin: 0 !important;
-    box-shadow: none !important;
-  }
-  .page {
-    width: 8.5in !important;
-    min-height: 11in !important;
-    box-shadow: none !important;
-    border: 1px solid #000 !important;
-    transform: scale(1) !important;
   }
 }
 

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react'
+import './editor.css'
 import {
   Box,
   Paper,
@@ -150,6 +151,7 @@ const RichTextEditor = forwardRef<RichTextHandle, RichTextEditorProps>(function 
   const lastHtmlRef = useRef<string>('') // prevent update loops
   const onChangeRef = useRef(onChange) // stable ref for onChange callback
   const initializedRef = useRef(false) // track if editor has been initialized
+  const savedSelectionRef = useRef<Range | null>(null) // save selection for image insertion
 
   // Keep onChange ref current without triggering re-renders
   useEffect(() => {
@@ -228,8 +230,38 @@ const RichTextEditor = forwardRef<RichTextHandle, RichTextEditorProps>(function 
     }
   }
 
-  // Insert image from search results
+  // Save selection when opening image search
+  const openImageSearch = () => {
+    const selection = window.getSelection()
+    if (selection && selection.rangeCount > 0) {
+      savedSelectionRef.current = selection.getRangeAt(0).cloneRange()
+    }
+    setImageSearchOpen(true)
+  }
+
+  // Restore selection and insert image
   const insertSearchImage = (img: { url: string; alt: string; credit: string; creditUrl: string }) => {
+    // Restore saved selection
+    if (savedSelectionRef.current && editorRef.current) {
+      editorRef.current.focus()
+      const selection = window.getSelection()
+      if (selection) {
+        selection.removeAllRanges()
+        selection.addRange(savedSelectionRef.current)
+      }
+    } else if (editorRef.current) {
+      // If no saved selection, put cursor at end
+      editorRef.current.focus()
+      const selection = window.getSelection()
+      if (selection) {
+        const range = document.createRange()
+        range.selectNodeContents(editorRef.current)
+        range.collapse(false) // collapse to end
+        selection.removeAllRanges()
+        selection.addRange(range)
+      }
+    }
+
     const imgHTML = `
       <figure style="margin: 15px 0; text-align: center;">
         <img src="${img.url}" alt="${img.alt}" style="max-width: 100%; height: auto; border-radius: 4px;">
@@ -242,6 +274,7 @@ const RichTextEditor = forwardRef<RichTextHandle, RichTextEditorProps>(function 
     setImageSearchOpen(false)
     setImageSearchQuery('')
     setImageSearchResults([])
+    savedSelectionRef.current = null
   }
 
   const execCommand = (command: string, value?: string) => {
@@ -774,7 +807,7 @@ const RichTextEditor = forwardRef<RichTextHandle, RichTextEditorProps>(function 
             </IconButton>
           </Tooltip>
           <Tooltip title="Search Images">
-            <Button size="small" startIcon={<Image />} onClick={() => setImageSearchOpen(true)} variant="outlined">
+            <Button size="small" startIcon={<Image />} onClick={openImageSearch} variant="outlined">
               Images
             </Button>
           </Tooltip>
@@ -787,27 +820,26 @@ const RichTextEditor = forwardRef<RichTextHandle, RichTextEditorProps>(function 
         </Box>
       </Paper>
 
-      <Box
-        ref={editorRef}
-        contentEditable
-        suppressContentEditableWarning
-        onInput={() => saveToUndoStack(true)}
-        sx={{
-          flex: 1,
-          p: 3,
-          bgcolor: 'background.paper',
-          minHeight: 400,
-          overflowY: 'auto',
-          outline: 'none',
-          fontFamily: fontFamily,
-          fontSize: fontSize,
-          '&:focus': { outline: 'none' },
-          '& *': { maxWidth: '100%' },
-          '& img': { maxWidth: '100%', height: 'auto' },
-          '& table': { borderCollapse: 'collapse', width: '100%' },
-          '& td, & th': { border: '1px solid #ddd', padding: '8px' },
-        }}
-      />
+      {/* Page container - 8.5x11 document view */}
+      <div className="page-wrap">
+        <div
+          className="page"
+          style={{ '--zoom': zoom } as React.CSSProperties}
+        >
+          <div
+            ref={editorRef}
+            contentEditable
+            suppressContentEditableWarning
+            onInput={() => saveToUndoStack(true)}
+            style={{
+              minHeight: '900px',
+              outline: 'none',
+              fontFamily: fontFamily,
+              fontSize: fontSize,
+            }}
+          />
+        </div>
+      </div>
 
       <Popover open={Boolean(colorAnchorEl)} anchorEl={colorAnchorEl} onClose={() => setColorAnchorEl(null)} anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}>
         <Box sx={{ p: 2, width: 280, display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
