@@ -21,6 +21,7 @@
 - **Fixed:** React error #185 in RichTextEditor - removed `onChange` from useEffect deps, using ref instead.
 - **Fixed:** `handleProcessorChange` wrapped in `useCallback` to prevent unnecessary re-renders.
 - **Fixed:** Styles endpoint moved to `client/api/styles.ts` for proper Vercel deployment.
+- **Fixed:** Added DOCX export endpoint `client/api/export/docx.ts` for Vercel (was missing).
 
 ## In Progress / To Verify
 - Redeploy to Vercel to apply fixes (styles endpoint, share token passthrough).
@@ -55,6 +56,7 @@
 - `client/src/processor/companion/CompanionPanel.tsx`: companion UI using RichTextHandle.
 - `client/src/processor/editor/EditorCanvas.tsx`: legacy Tiptap (not used).
 - `client/api/styles.ts`: serverless styles endpoint (Vercel) - **moved from root `/api`**.
+- `client/api/export/docx.ts`: serverless DOCX export endpoint (Vercel) - **newly added**.
 - `server/src/controllers/fileController.ts`: SFTP file ops, share, serve rewrite (with share token passthrough).
 - `server/src/routes/files.ts`: file routes + share.
 - `server/src/routes/export.ts`: DOCX export (now accepts share tokens).
