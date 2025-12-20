@@ -1,6 +1,4 @@
 import { useMemo, useState } from 'react'
-import spectrumImg from '../../assets/SVG/spectrum.svg'
-import dropper from '../../assets/newdropper/SVG/NEWDROPPER.svg'
 import './editor.css'
 
 interface ColorPanelProps {
@@ -47,16 +45,17 @@ export function ColorPanel({ current, onSelectColor }: ColorPanelProps) {
   }
 
   const shadesTints = useMemo(() => buildShadesAndTints(current), [current])
-
-  const handleSpectrumMove = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-    const rect = e.currentTarget.getBoundingClientRect()
-    const x = Math.min(rect.width, Math.max(0, e.clientX - rect.left))
-    const pos = x / rect.width
-    setPickerPos(pos)
-    const hue = pos * 360
-    const f = (n: number, k = (n + hue / 60) % 6) => 255 * (1 - Math.max(Math.min(k, 4 - k, 1), 0))
-    apply(rgbToHex({ r: f(5), g: f(3), b: f(1) }))
-  }
+  const themePalette = useMemo(
+    () => [
+      ['#ffffff', '#000000', '#1f365d', '#c55a11', '#2f6a4f', '#2b579a', '#1e7145'],
+      ['#f2f2f2', '#7f7f7f', '#2f5597', '#ed7d31', '#70ad47', '#4472c4', '#70ad47'],
+      ['#d9d9d9', '#595959', '#376092', '#c55a11', '#4bacc6', '#8064a2', '#9bbb59'],
+      ['#bfbfbf', '#3f3f3f', '#254061', '#9c4a0c', '#2f6a4f', '#305496', '#385723'],
+      ['#a6a6a6', '#262626', '#1f365d', '#7f3f0c', '#1f4e60', '#203864', '#244f2b'],
+    ],
+    [],
+  )
+  const standardColors = ['#c00000', '#ff0000', '#ffc000', '#ffff00', '#92d050', '#00b0f0', '#0070c0', '#002060', '#7030a0']
 
   return (
     <div className="color-panel palette-light">
@@ -97,23 +96,28 @@ export function ColorPanel({ current, onSelectColor }: ColorPanelProps) {
       </div>
 
       <div className="simple-picker">
-        <input
-          type="color"
-          value={current}
-          onChange={(e) => apply(e.target.value)}
-          aria-label="Pick color"
-        />
-        <input
-          className="hex-input"
-          value={current}
-          onChange={(e) => apply(e.target.value)}
-        />
+        <input type="color" value={current} onChange={(e) => apply(e.target.value)} aria-label="Pick color" />
+        <input className="hex-input" value={current} onChange={(e) => apply(e.target.value)} />
       </div>
 
-      <div className="spectrum-block">
-        <div className="spectrum-bar shape" onMouseMove={handleSpectrumMove} onClick={handleSpectrumMove}>
-          <img src={spectrumImg} alt="Spectrum" />
-          <img className="dropper" src={dropper} alt="Dropper" style={{ left: `${pickerPos * 100}%` }} />
+      <div className="theme-colors">
+        <div className="theme-title">Theme Colors</div>
+        <div className="theme-grid">
+          {themePalette.map((row, rIdx) =>
+            row.map((c, idx) => (
+              <button key={`${rIdx}-${idx}`} className="history-chip shape" onClick={() => apply(c)}>
+                <span className="history-fill" style={{ background: c }} />
+              </button>
+            )),
+          )}
+        </div>
+        <div className="theme-title">Standard Colors</div>
+        <div className="standard-row">
+          {standardColors.map((c, idx) => (
+            <button key={`std-${idx}`} className="history-chip shape" onClick={() => apply(c)}>
+              <span className="history-fill" style={{ background: c }} />
+            </button>
+          ))}
         </div>
       </div>
     </div>

@@ -384,24 +384,22 @@
   gap: 6px;
 }
 
-.theme-row {
+.theme-colors {
   display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.theme-swatches {
-  display: grid;
-  grid-template-columns: repeat(6, 18px);
+  flex-direction: column;
   gap: 4px;
-  padding: 4px;
-  border: 1px solid var(--line);
-  background: #fff;
 }
 
-.theme-name {
-  font-size: 12px;
-  color: var(--text-muted);
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 18px);
+  gap: 4px;
+}
+
+.standard-row {
+  display: grid;
+  grid-template-columns: repeat(9, 18px);
+  gap: 4px;
 }
   height: 18px;
   border-radius: 0;
