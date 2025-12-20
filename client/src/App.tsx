@@ -111,7 +111,7 @@ const [newItemModal, setNewItemModal] = useState<{ open: boolean; type: 'file' |
   const isTextLike = (path?: string) => {
     if (!path) return false;
     const ext = path.split('.').pop()?.toLowerCase() || '';
-    return ['txt', 'doc', 'docx', 'rtf', 'md'].includes(ext);
+    return ['txt', 'doc', 'docx', 'rtf', 'md', 'html', 'htm'].includes(ext);
   };
 
   const normalizePath = (base: string, relative: string) => {
@@ -182,9 +182,9 @@ const [newItemModal, setNewItemModal] = useState<{ open: boolean; type: 'file' |
     const base = currentPath || '/';
     const name = `untitled-${Date.now()}.html`;
     const targetPath = normalizePath(base, name);
-    await createFile(targetPath, '');
+    await createFile(targetPath, '<p></p>');
     await handleOpenFile(targetPath);
-    setView('editor'); // open new files in Monaco/code editor by default
+    setView('processor'); // new document opens in processor (rich editor)
   };
 
   const currentFile = activeFile ? openFiles.get(activeFile) : undefined;
