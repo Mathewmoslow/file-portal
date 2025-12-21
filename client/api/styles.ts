@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-// Serverless styles endpoint backed by SFTP (IONOS)
-const Client = require('ssh2-sftp-client')
+// @ts-ignore - ssh2-sftp-client doesn't have types
+import Client from 'ssh2-sftp-client'
 
 const host = process.env.SFTP_HOST
 const port = Number(process.env.SFTP_PORT || 22)
@@ -28,6 +28,15 @@ async function withSftp(fn: (sftp: any) => Promise<any>) {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*')
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end()
+  }
+
   try {
     if (req.method === 'GET') {
       const styles = await withSftp(async (sftp) => {

@@ -100,6 +100,7 @@ import {
 export interface RichTextHandle {
   getHtml: () => string
   getText: () => string
+  getDocumentText: () => string // alias for getText, for CompanionPanel compatibility
   applyHtml: (html: string) => void
   applyText: (text: string) => void
 }
@@ -570,6 +571,7 @@ const RichTextEditor = forwardRef<RichTextHandle, RichTextEditorProps>(function 
   useImperativeHandle(ref, () => ({
     getHtml: () => editorRef.current?.innerHTML || '',
     getText: () => editorRef.current?.innerText || '',
+    getDocumentText: () => editorRef.current?.innerText || '', // alias for CompanionPanel
     applyHtml: (html: string) => {
       if (editorRef.current) {
         editorRef.current.innerHTML = html
