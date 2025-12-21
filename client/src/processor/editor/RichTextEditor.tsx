@@ -207,18 +207,32 @@ const RichTextEditor = forwardRef<RichTextHandle, RichTextEditorProps>(function 
     return () => document.removeEventListener('selectionchange', handleSelectionChange)
   }, [onSelectionChange])
 
-  // Rename handlers
+  // Rename handlers - preserve file extension
+  const getFileExtension = (name: string) => {
+    const match = name.match(/(\.[^.]+)$/)
+    return match ? match[1] : ''
+  }
+
+  const getNameWithoutExtension = (name: string) => {
+    return name.replace(/\.[^.]+$/, '')
+  }
+
   const handleStartRename = () => {
     if (fileName) {
       const baseName = fileName.split('/').pop() || ''
-      setEditedName(baseName)
+      // Only edit the name part, not the extension
+      setEditedName(getNameWithoutExtension(baseName))
       setIsEditingName(true)
     }
   }
 
   const handleFinishRename = () => {
-    if (editedName.trim() && onRename) {
-      onRename(editedName.trim())
+    if (editedName.trim() && onRename && fileName) {
+      const baseName = fileName.split('/').pop() || ''
+      const extension = getFileExtension(baseName)
+      // Always preserve the original extension
+      const newName = editedName.trim() + extension
+      onRename(newName)
     }
     setIsEditingName(false)
   }
@@ -663,7 +677,7 @@ const RichTextEditor = forwardRef<RichTextHandle, RichTextEditorProps>(function 
                   {fileName.split('/').pop()}
                 </Typography>
               )}
-              {isEditingName && (
+              {isEditingName && fileName && (
                 <TextField
                   size="small"
                   value={editedName}
@@ -673,6 +687,13 @@ const RichTextEditor = forwardRef<RichTextHandle, RichTextEditorProps>(function 
                   autoFocus
                   sx={{ flex: 1 }}
                   inputProps={{ style: { fontSize: 13, padding: '4px 8px' } }}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <Typography variant="caption" color="text.secondary">{getFileExtension(fileName.split('/').pop() || '')}</Typography>
+                      </InputAdornment>
+                    ),
+                  }}
                 />
               )}
               {isUnsaved && <Chip label="•" size="small" color="warning" sx={{ height: 16, '& .MuiChip-label': { px: 0.5 } }} />}
@@ -722,7 +743,7 @@ const RichTextEditor = forwardRef<RichTextHandle, RichTextEditorProps>(function 
                 </Typography>
               </Tooltip>
             )}
-            {isEditingName && (
+            {isEditingName && fileName && (
               <TextField
                 size="small"
                 value={editedName}
@@ -734,6 +755,13 @@ const RichTextEditor = forwardRef<RichTextHandle, RichTextEditorProps>(function 
                 }}
                 autoFocus
                 sx={{ width: 200 }}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <Typography variant="caption" color="text.secondary">{getFileExtension(fileName.split('/').pop() || '')}</Typography>
+                    </InputAdornment>
+                  ),
+                }}
               />
             )}
             {isUnsaved && <Chip label="Unsaved" size="small" color="warning" sx={{ height: 20 }} />}
