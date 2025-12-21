@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type React from 'react'
 import { Tabs, Card, Space, Button, Select, Typography, Tag, Input, Alert, Popover, Upload, message, Modal, Radio, Divider } from 'antd'
-import { SendOutlined, ReloadOutlined, AuditOutlined, PlayCircleOutlined, PauseOutlined, StopOutlined, WarningOutlined, CheckOutlined, CloseOutlined, UndoOutlined, EyeOutlined } from '@ant-design/icons'
+import { SendOutlined, ReloadOutlined, AuditOutlined, PlayCircleOutlined, PauseOutlined, StopOutlined, WarningOutlined, CheckOutlined, CloseOutlined, UndoOutlined, EyeOutlined, ClearOutlined } from '@ant-design/icons'
 import { useCompanionStore, type CompanionScope } from '../store/companion'
 import { voicePresets } from '../shared/voices'
 import { auditText } from '../shared/audit'
@@ -589,52 +589,342 @@ function ChatMode({ editorRef }: { editorRef?: React.RefObject<RichTextHandle> }
   )
 }
 
-function AutonomousMode() {
-  const [status, setStatus] = useState<'idle' | 'planning' | 'drafting' | 'paused'>('idle')
+interface Passage {
+  id: string
+  title: string
+  outline: string
+  draft: string | null
+  status: 'pending' | 'drafting' | 'review' | 'approved' | 'rejected'
+}
+
+function AutonomousMode({ editorRef }: { editorRef?: React.RefObject<RichTextHandle> }) {
+  const { activeVoice, scope } = useCompanionStore()
+  const [status, setStatus] = useState<'idle' | 'parsing' | 'drafting' | 'paused' | 'complete'>('idle')
+  const [outlineText, setOutlineText] = useState('')
+  const [passages, setPassages] = useState<Passage[]>([])
+  const [currentIndex, setCurrentIndex] = useState(0)
   const [log, setLog] = useState<string[]>([])
+  const [error, setError] = useState<string | null>(null)
 
-  const pushLog = (entry: string) => setLog((prev) => [...prev, entry])
+  const pushLog = (entry: string) => setLog((prev) => [...prev, `${new Date().toLocaleTimeString()}: ${entry}`])
 
-  const start = () => {
-    setStatus('planning')
-    pushLog('Planning beats from outline…')
-    setTimeout(() => {
-      pushLog('Beat 1 approved. Drafting section…')
-      setStatus('drafting')
-      setTimeout(() => {
-        pushLog('Draft complete. Awaiting review.')
-        setStatus('idle')
-      }, 800)
-    }, 800)
+  // Parse outline into passages - looks for headers, numbered items, or double newlines
+  const parseOutline = (text: string): Passage[] => {
+    const lines = text.split('\n')
+    const result: Passage[] = []
+    let currentPassage: { title: string; lines: string[] } | null = null
+
+    for (const line of lines) {
+      const trimmed = line.trim()
+      if (!trimmed) continue
+
+      // Check if this is a header/section marker
+      const isHeader = /^#{1,3}\s+/.test(trimmed) || // Markdown headers
+                       /^\d+[\.\)]\s+/.test(trimmed) || // Numbered items
+                       /^[A-Z][A-Z\s]+:?\s*$/.test(trimmed) || // ALL CAPS headers
+                       /^(Chapter|Section|Part|Scene|Passage)\s+/i.test(trimmed)
+
+      if (isHeader) {
+        // Save previous passage
+        if (currentPassage && currentPassage.lines.length > 0) {
+          result.push({
+            id: crypto.randomUUID(),
+            title: currentPassage.title,
+            outline: currentPassage.lines.join('\n'),
+            draft: null,
+            status: 'pending',
+          })
+        }
+        // Start new passage
+        currentPassage = { title: trimmed.replace(/^#+\s*/, '').replace(/^\d+[\.\)]\s*/, ''), lines: [] }
+      } else if (currentPassage) {
+        currentPassage.lines.push(trimmed)
+      } else {
+        // No header yet, create first passage
+        currentPassage = { title: 'Introduction', lines: [trimmed] }
+      }
+    }
+
+    // Don't forget the last passage
+    if (currentPassage && currentPassage.lines.length > 0) {
+      result.push({
+        id: crypto.randomUUID(),
+        title: currentPassage.title,
+        outline: currentPassage.lines.join('\n'),
+        draft: null,
+        status: 'pending',
+      })
+    }
+
+    // If no structure found, treat entire text as one passage
+    if (result.length === 0 && text.trim()) {
+      result.push({
+        id: crypto.randomUUID(),
+        title: 'Full Document',
+        outline: text.trim(),
+        draft: null,
+        status: 'pending',
+      })
+    }
+
+    return result
   }
 
+  const handleUpload = (file: File) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const text = reader.result?.toString() ?? ''
+      setOutlineText(text)
+      message.success(`Loaded: ${file.name}`)
+    }
+    reader.onerror = () => message.error('Failed to read file')
+    reader.readAsText(file)
+    return false
+  }
+
+  const startDrafting = () => {
+    if (!outlineText.trim()) {
+      message.warning('Please paste or upload an outline first')
+      return
+    }
+
+    setStatus('parsing')
+    setLog([])
+    setError(null)
+    pushLog('Parsing outline into passages...')
+
+    const parsed = parseOutline(outlineText)
+    if (parsed.length === 0) {
+      setError('Could not parse any passages from outline')
+      setStatus('idle')
+      return
+    }
+
+    setPassages(parsed)
+    setCurrentIndex(0)
+    pushLog(`Found ${parsed.length} passage${parsed.length > 1 ? 's' : ''} to draft`)
+    setStatus('drafting')
+
+    // Start drafting first passage
+    draftPassage(parsed, 0)
+  }
+
+  const draftPassage = async (passageList: Passage[], index: number) => {
+    if (index >= passageList.length) {
+      setStatus('complete')
+      pushLog('All passages complete!')
+      return
+    }
+
+    const passage = passageList[index]
+    pushLog(`Drafting: "${passage.title}"...`)
+
+    // Update passage status
+    setPassages(prev => prev.map((p, i) => i === index ? { ...p, status: 'drafting' } : p))
+
+    try {
+      const res = await callCompanion({
+        mode: 'autonomous',
+        text: passage.outline,
+        voiceId: activeVoice.id,
+        rules: [...masterRulesSummary, ...masterStyleCondensed],
+        tweaks: `This is passage ${index + 1} of ${passageList.length}, titled "${passage.title}". Write flowing prose based on the outline points provided. Maintain narrative continuity.`,
+      })
+
+      // Update with draft
+      setPassages(prev => prev.map((p, i) =>
+        i === index ? { ...p, draft: res.text, status: 'review' } : p
+      ))
+      pushLog(`Draft ready for: "${passage.title}"`)
+
+    } catch (e: any) {
+      setError(e?.message ?? 'Drafting failed')
+      pushLog(`Error drafting "${passage.title}": ${e?.message}`)
+      setPassages(prev => prev.map((p, i) =>
+        i === index ? { ...p, status: 'pending' } : p
+      ))
+      setStatus('paused')
+    }
+  }
+
+  const approvePassage = (index: number) => {
+    const passage = passages[index]
+    if (!passage.draft || !editorRef?.current) return
+
+    // Add to document
+    const html = `<h3>${passage.title}</h3><p>${passage.draft.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>')}</p>`
+    editorRef.current.applyText(html)
+
+    setPassages(prev => prev.map((p, i) => i === index ? { ...p, status: 'approved' } : p))
+    pushLog(`Approved: "${passage.title}"`)
+
+    // Move to next
+    const nextIndex = index + 1
+    setCurrentIndex(nextIndex)
+    if (nextIndex < passages.length && status === 'drafting') {
+      draftPassage(passages, nextIndex)
+    } else if (nextIndex >= passages.length) {
+      setStatus('complete')
+      pushLog('All passages complete!')
+    }
+  }
+
+  const rejectPassage = (index: number) => {
+    setPassages(prev => prev.map((p, i) => i === index ? { ...p, status: 'rejected' } : p))
+    pushLog(`Skipped: "${passages[index].title}"`)
+
+    const nextIndex = index + 1
+    setCurrentIndex(nextIndex)
+    if (nextIndex < passages.length && status === 'drafting') {
+      draftPassage(passages, nextIndex)
+    } else if (nextIndex >= passages.length) {
+      setStatus('complete')
+      pushLog('All passages complete!')
+    }
+  }
+
+  const redraftPassage = (index: number) => {
+    setPassages(prev => prev.map((p, i) => i === index ? { ...p, draft: null, status: 'pending' } : p))
+    draftPassage(passages, index)
+  }
+
+  const pauseDrafting = () => {
+    setStatus('paused')
+    pushLog('Drafting paused')
+  }
+
+  const resumeDrafting = () => {
+    setStatus('drafting')
+    pushLog('Resuming...')
+    // Find next pending or current review
+    const nextPending = passages.findIndex((p, i) => i >= currentIndex && p.status === 'pending')
+    if (nextPending >= 0) {
+      draftPassage(passages, nextPending)
+    }
+  }
+
+  const resetAll = () => {
+    setStatus('idle')
+    setPassages([])
+    setCurrentIndex(0)
+    setLog([])
+    setError(null)
+  }
+
+  const currentPassage = passages[currentIndex]
+
   return (
-    <Space direction="vertical" style={{ width: '100%' }}>
-      <Upload beforeUpload={() => { message.info('Stub: attach outline/style.'); return false }}>
-        <Button size="small">Attach outline / style</Button>
-      </Upload>
-      <Space>
-        <Button size="small" type="primary" icon={<PlayCircleOutlined />} onClick={start} disabled={status === 'drafting'}>
-          Start
-        </Button>
-        <Button size="small" icon={<PauseOutlined />} disabled={status !== 'drafting'} onClick={() => setStatus('paused')}>
-          Pause
-        </Button>
-        <Button size="small" icon={<StopOutlined />} onClick={() => setStatus('idle')}>
-          Stop
-        </Button>
-      </Space>
-      <div className="autonomous-log">
-        {log.map((l, idx) => (
-          <div key={idx} className="log-line">{l}</div>
-        ))}
-        {log.length === 0 && <Text type="secondary">Generation log will appear here.</Text>}
-      </div>
-      <Alert
-        type="info"
-        message="Autonomous Draft runs beat-by-beat with approvals. This is a stub UI; connect backend to generate real prose from outline/style."
-        showIcon
-      />
+    <Space direction="vertical" size={12} style={{ width: '100%' }}>
+      {/* Outline Input */}
+      {status === 'idle' && (
+        <>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            Paste your outline or upload a file. The AI will draft each passage for your approval.
+          </Text>
+          <Input.TextArea
+            rows={6}
+            placeholder="Paste your outline here...&#10;&#10;Use headers (# Section), numbered items (1. First point), or ALL CAPS to mark passage breaks."
+            value={outlineText}
+            onChange={(e) => setOutlineText(e.target.value)}
+          />
+          <Space>
+            <Upload beforeUpload={handleUpload} showUploadList={false} accept=".txt,.md,.text">
+              <Button size="small">Upload Outline</Button>
+            </Upload>
+            <Button
+              size="small"
+              type="primary"
+              icon={<PlayCircleOutlined />}
+              onClick={startDrafting}
+              disabled={!outlineText.trim()}
+            >
+              Start Drafting
+            </Button>
+          </Space>
+        </>
+      )}
+
+      {/* Progress */}
+      {status !== 'idle' && (
+        <>
+          <div className="autonomous-progress">
+            <Text strong>
+              Progress: {passages.filter(p => p.status === 'approved').length} / {passages.length} passages
+            </Text>
+            <Space>
+              {status === 'drafting' && (
+                <Button size="small" icon={<PauseOutlined />} onClick={pauseDrafting}>Pause</Button>
+              )}
+              {status === 'paused' && (
+                <Button size="small" icon={<PlayCircleOutlined />} onClick={resumeDrafting}>Resume</Button>
+              )}
+              <Button size="small" icon={<StopOutlined />} onClick={resetAll}>Reset</Button>
+            </Space>
+          </div>
+
+          {/* Passage List */}
+          <div className="passage-list">
+            {passages.map((p, i) => (
+              <div key={p.id} className={`passage-item ${p.status} ${i === currentIndex ? 'current' : ''}`}>
+                <div className="passage-header">
+                  <Text strong style={{ fontSize: 13 }}>{i + 1}. {p.title}</Text>
+                  <Tag color={
+                    p.status === 'approved' ? 'green' :
+                    p.status === 'rejected' ? 'default' :
+                    p.status === 'review' ? 'blue' :
+                    p.status === 'drafting' ? 'processing' : 'default'
+                  }>
+                    {p.status}
+                  </Tag>
+                </div>
+
+                {/* Show draft for review */}
+                {p.status === 'review' && (
+                  <div className="passage-review">
+                    <div className="passage-outline">
+                      <Text type="secondary" style={{ fontSize: 11 }}>Outline:</Text>
+                      <div className="outline-text">{p.outline}</div>
+                    </div>
+                    <div className="passage-draft">
+                      <Text type="secondary" style={{ fontSize: 11 }}>Draft:</Text>
+                      <div className="draft-text">{p.draft}</div>
+                    </div>
+                    <Space style={{ marginTop: 8 }}>
+                      <Button size="small" type="primary" icon={<CheckOutlined />} onClick={() => approvePassage(i)}>
+                        Approve & Add
+                      </Button>
+                      <Button size="small" icon={<ReloadOutlined />} onClick={() => redraftPassage(i)}>
+                        Redraft
+                      </Button>
+                      <Button size="small" icon={<CloseOutlined />} onClick={() => rejectPassage(i)}>
+                        Skip
+                      </Button>
+                    </Space>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {error && <Alert type="error" message={error} showIcon />}
+
+          {/* Activity Log */}
+          <div className="autonomous-log">
+            {log.map((l, idx) => (
+              <div key={idx} className="log-line">{l}</div>
+            ))}
+          </div>
+
+          {status === 'complete' && (
+            <Alert
+              type="success"
+              message="Drafting Complete"
+              description={`${passages.filter(p => p.status === 'approved').length} passages added to document.`}
+              showIcon
+            />
+          )}
+        </>
+      )}
     </Space>
   )
 }
@@ -649,6 +939,7 @@ export function CompanionPanel({ editorRef }: { editorRef?: React.RefObject<Rich
     writingStyles,
     addWritingStyle,
     loadWritingStyles,
+    resetCompanion,
   } = companionState
   const styleList = Array.isArray(writingStyles) ? writingStyles : []
   const [activeTab, setActiveTab] = useState('actions')
@@ -679,13 +970,21 @@ export function CompanionPanel({ editorRef }: { editorRef?: React.RefObject<Rich
     <div className="companion-panel">
       <div className="companion-header">
         <div className="companion-title-wrap">
-          <Text strong className="companion-title">Voice</Text>
+          <Text strong className="companion-title">AI Companion</Text>
         </div>
         <Space size={8}>
           <VoiceBadge />
           <RulesPopover />
-          <Button size="small" onClick={() => message.info('Loaded master style guide.')} aria-label="Read master style">
-            Read style
+          <Button
+            size="small"
+            icon={<ClearOutlined />}
+            onClick={() => {
+              resetCompanion()
+              message.success('Companion reset - fresh start')
+            }}
+            title="Clear all history and start fresh"
+          >
+            Reset
           </Button>
         </Space>
       </div>
@@ -783,7 +1082,7 @@ export function CompanionPanel({ editorRef }: { editorRef?: React.RefObject<Rich
         items={[
           { key: 'actions', label: 'Actions', children: <ActionMode editorRef={editorRef} /> },
           { key: 'chat', label: 'Iterative Chat', children: <ChatMode editorRef={editorRef} /> },
-          { key: 'autonomous', label: 'Autonomous Draft', children: <AutonomousMode /> },
+          { key: 'autonomous', label: 'Autonomous Draft', children: <AutonomousMode editorRef={editorRef} /> },
         ]}
       />
     </div>

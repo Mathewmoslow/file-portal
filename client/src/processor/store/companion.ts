@@ -76,6 +76,7 @@ interface CompanionState {
   addAppliedChange: (change: AppliedChange) => void
   getLastAppliedChange: () => AppliedChange | null
   revertLastChange: () => AppliedChange | null
+  resetCompanion: () => void
 }
 
 // Helper to calculate warnings based on text changes
@@ -195,6 +196,20 @@ export const useCompanionStore = create<CompanionState>((set, get) => ({
     set({ appliedChanges: changes.slice(0, -1) })
     return last
   },
+
+  // Reset all companion state for fresh start
+  resetCompanion: () => {
+    set({
+      suggestions: [],
+      chat: [],
+      selectionPreview: '',
+      pendingSuggestion: null,
+      appliedChanges: [],
+      error: null,
+      loading: false,
+    })
+  },
+
   addWritingStyle: async (name, content) => {
     const fallback: WritingStyle = { id: crypto.randomUUID(), name, content }
     try {
