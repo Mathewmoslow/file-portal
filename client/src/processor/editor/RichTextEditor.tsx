@@ -101,8 +101,12 @@ export interface RichTextHandle {
   getHtml: () => string
   getText: () => string
   getDocumentText: () => string // alias for getText, for CompanionPanel compatibility
+  getSelectedText: () => string
+  getContainingParagraph: () => string
   applyHtml: (html: string) => void
   applyText: (text: string) => void
+  replaceSelectedText: (newText: string) => void
+  saveUndoSnapshot: () => void
 }
 
 interface RichTextEditorProps {
@@ -572,17 +576,65 @@ const RichTextEditor = forwardRef<RichTextHandle, RichTextEditorProps>(function 
     getHtml: () => editorRef.current?.innerHTML || '',
     getText: () => editorRef.current?.innerText || '',
     getDocumentText: () => editorRef.current?.innerText || '', // alias for CompanionPanel
+    getSelectedText: () => {
+      const selection = window.getSelection()
+      if (selection && editorRef.current?.contains(selection.anchorNode)) {
+        return selection.toString()
+      }
+      return ''
+    },
+    getContainingParagraph: () => {
+      const selection = window.getSelection()
+      if (selection && selection.anchorNode && editorRef.current?.contains(selection.anchorNode)) {
+        // Find the containing paragraph or block element
+        let node: Node | null = selection.anchorNode
+        while (node && node !== editorRef.current) {
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            const el = node as HTMLElement
+            const tagName = el.tagName.toLowerCase()
+            if (['p', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li', 'blockquote'].includes(tagName)) {
+              return el.innerText || ''
+            }
+          }
+          node = node.parentNode
+        }
+      }
+      return ''
+    },
     applyHtml: (html: string) => {
       if (editorRef.current) {
+        // Save undo snapshot before applying
+        saveToUndoStack(false)
         editorRef.current.innerHTML = html
+        lastHtmlRef.current = html
         onChange?.(html)
       }
     },
     applyText: (text: string) => {
       if (editorRef.current) {
+        // Save undo snapshot before applying
+        saveToUndoStack(false)
         editorRef.current.innerHTML += text
         onChange?.(editorRef.current.innerHTML)
       }
+    },
+    replaceSelectedText: (newText: string) => {
+      const selection = window.getSelection()
+      if (selection && selection.rangeCount > 0 && editorRef.current?.contains(selection.anchorNode)) {
+        // Save undo snapshot before replacing
+        saveToUndoStack(false)
+        const range = selection.getRangeAt(0)
+        range.deleteContents()
+        range.insertNode(document.createTextNode(newText))
+        // Move cursor to end of inserted text
+        range.collapse(false)
+        selection.removeAllRanges()
+        selection.addRange(range)
+        onChange?.(editorRef.current.innerHTML)
+      }
+    },
+    saveUndoSnapshot: () => {
+      saveToUndoStack(false)
     },
   }))
 
