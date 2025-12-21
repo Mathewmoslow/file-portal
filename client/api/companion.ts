@@ -1,14 +1,12 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-
 interface CompanionRequest {
   mode: 'action' | 'chat' | 'autonomous';
   action?: string;
   text?: string;
   threadId?: string;
-  voiceId: string;
-  rules: string[];
+  voiceId?: string;
+  rules?: string[];
   tweaks?: string;
 }
 
@@ -17,6 +15,7 @@ interface CompanionRequest {
  * POST /api/companion
  */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // Set CORS headers first
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -29,7 +28,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  if (!ANTHROPIC_API_KEY) {
+  // Get API key inside handler to ensure fresh read
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+
+  if (!apiKey) {
+    console.error('ANTHROPIC_API_KEY not found in environment');
     return res.status(500).json({
       error: 'AI companion not configured. Please set ANTHROPIC_API_KEY in environment variables.'
     });
@@ -50,7 +53,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       systemPrompt += `\n\nWriting voice/style to use: ${voiceId}`;
     }
 
-    if (rules && rules.length > 0) {
+    if (rules && Array.isArray(rules) && rules.length > 0) {
       systemPrompt += `\n\nWriting rules to follow:\n${rules.map((r, i) => `${i + 1}. ${r}`).join('\n')}`;
     }
 
@@ -77,15 +80,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Call Anthropic API
+    console.log('Calling Anthropic API with mode:', mode);
+
     const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
+        'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-3-haiku-20240307', // Using Haiku for speed and cost efficiency
+        model: 'claude-3-haiku-20240307',
         max_tokens: 4096,
         system: systemPrompt,
         messages: [
@@ -97,21 +102,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!anthropicRes.ok) {
       const errorText = await anthropicRes.text();
       console.error('Anthropic API error:', anthropicRes.status, errorText);
-      return res.status(anthropicRes.status).json({
-        error: `AI request failed: ${anthropicRes.status}`
+      return res.status(500).json({
+        error: `AI request failed: ${anthropicRes.status}`,
+        details: errorText
       });
     }
 
     const data = await anthropicRes.json();
     const responseText = data.content?.[0]?.text || '';
 
+    console.log('Anthropic API response received, length:', responseText.length);
+
     return res.status(200).json({
       text: responseText,
-      auditFlags: [], // Could be populated if we parse the response for issues
+      auditFlags: [],
     });
 
   } catch (error: any) {
-    console.error('Companion API error:', error);
-    return res.status(500).json({ error: error?.message || 'Companion request failed' });
+    console.error('Companion API error:', error?.message, error?.stack);
+    return res.status(500).json({
+      error: error?.message || 'Companion request failed',
+      stack: process.env.NODE_ENV === 'development' ? error?.stack : undefined
+    });
   }
 }
