@@ -125,6 +125,7 @@ interface RichTextEditorProps {
   onZoomChange?: (zoom: number) => void
   onRename?: (newName: string) => void
   onSelectionChange?: (selectedText: string) => void
+  onClose?: () => void
 }
 
 const fontFamilies = ['Arial', 'Times New Roman', 'Georgia', 'Verdana', 'Helvetica', 'Courier New', 'Comic Sans MS', 'Impact', 'Lucida Console', 'Tahoma', 'Trebuchet MS', 'Palatino']
@@ -141,7 +142,7 @@ const colors = [
 ]
 
 const RichTextEditor = forwardRef<RichTextHandle, RichTextEditorProps>(function RichTextEditor(
-  { initialContent, onSave, onPrint, onChange, fileName, isUnsaved, onPreview, onShare, onExportDocx, onExportPdf, zoom = 1, onZoomChange, onRename, onSelectionChange },
+  { initialContent, onSave, onPrint, onChange, fileName, isUnsaved, onPreview, onShare, onExportDocx, onExportPdf, zoom = 1, onZoomChange, onRename, onSelectionChange, onClose },
   ref,
 ) {
   const editorRef = useRef<HTMLDivElement>(null)
@@ -166,6 +167,7 @@ const RichTextEditor = forwardRef<RichTextHandle, RichTextEditorProps>(function 
   const [imageSearchLoading, setImageSearchLoading] = useState(false)
   const [imageSearchError, setImageSearchError] = useState<string | null>(null)
   const [mobileToolbarTab, setMobileToolbarTab] = useState<number | null>(null) // null = collapsed
+  const [closeDialogOpen, setCloseDialogOpen] = useState(false)
   const lastHtmlRef = useRef<string>('') // prevent update loops
   const onChangeRef = useRef(onChange) // stable ref for onChange callback
   const initializedRef = useRef(false) // track if editor has been initialized
@@ -432,6 +434,22 @@ const RichTextEditor = forwardRef<RichTextHandle, RichTextEditorProps>(function 
   const handlePrint = () => {
     if (onPrint) onPrint()
     else window.print()
+  }
+
+  const handleClose = () => {
+    if (isUnsaved) {
+      setCloseDialogOpen(true)
+    } else {
+      onClose?.()
+    }
+  }
+
+  const handleCloseConfirm = (save: boolean) => {
+    if (save && editorRef.current) {
+      onSave(editorRef.current.innerHTML)
+    }
+    setCloseDialogOpen(false)
+    onClose?.()
   }
 
   const insertTable = () => {
@@ -756,6 +774,9 @@ const RichTextEditor = forwardRef<RichTextHandle, RichTextEditorProps>(function 
               <IconButton onClick={handleUndo} size="small"><Undo fontSize="small" /></IconButton>
               <IconButton onClick={handleRedo} size="small"><Redo fontSize="small" /></IconButton>
               <IconButton onClick={handleSave} size="small" color="primary"><Save fontSize="small" /></IconButton>
+              {onClose && (
+                <IconButton onClick={handleClose} size="small"><Close fontSize="small" /></IconButton>
+              )}
             </Box>
           </Box>
         </Paper>
@@ -836,6 +857,13 @@ const RichTextEditor = forwardRef<RichTextHandle, RichTextEditorProps>(function 
                 <Save />
               </IconButton>
             </Tooltip>
+            {onClose && (
+              <Tooltip title="Close Document">
+                <IconButton onClick={handleClose} size="small">
+                  <Close />
+                </IconButton>
+              </Tooltip>
+            )}
             <Tooltip title="Print">
               <IconButton onClick={handlePrint} size="small">
                 <Print />
@@ -1358,6 +1386,27 @@ const RichTextEditor = forwardRef<RichTextHandle, RichTextEditorProps>(function 
             setImageSearchError(null)
           }}>
             Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Close Confirmation Dialog */}
+      <Dialog open={closeDialogOpen} onClose={() => setCloseDialogOpen(false)} maxWidth="xs">
+        <DialogTitle>Unsaved Changes</DialogTitle>
+        <DialogContent>
+          <Typography>
+            You have unsaved changes. Do you want to save before closing?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCloseDialogOpen(false)}>
+            Cancel
+          </Button>
+          <Button onClick={() => handleCloseConfirm(false)} color="error">
+            Discard
+          </Button>
+          <Button onClick={() => handleCloseConfirm(true)} variant="contained" color="primary">
+            Save & Close
           </Button>
         </DialogActions>
       </Dialog>

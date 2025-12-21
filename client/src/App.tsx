@@ -197,6 +197,12 @@ const [newItemModal, setNewItemModal] = useState<{ open: boolean; type: 'file' |
     }
   };
 
+  const handleCloseDocument = () => {
+    if (activeFile) {
+      closeFile(activeFile);
+    }
+  };
+
   const buildServeUrl = (path: string) => {
     const token = sessionStorage.getItem('token');
     const serveBase = `${apiBase}/serve`;
@@ -384,6 +390,7 @@ const [newItemModal, setNewItemModal] = useState<{ open: boolean; type: 'file' |
                         onZoomChange={setZoom}
                         onRename={handleRename}
                         onSelectionChange={setSelectionPreview}
+                        onClose={handleCloseDocument}
                       />
                     ) : (
                       <div className="editor-empty">
