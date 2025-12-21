@@ -32,6 +32,11 @@ import {
   CardActionArea,
   Alert,
   InputAdornment,
+  useMediaQuery,
+  useTheme,
+  Tabs,
+  Tab,
+  Collapse,
 } from '@mui/material'
 import {
   FormatBold,
@@ -83,6 +88,13 @@ import {
   PictureAsPdf,
   ZoomIn,
   Search,
+  TextFormat,
+  Add,
+  ViewModule,
+  MoreHoriz,
+  Close,
+  KeyboardArrowUp,
+  KeyboardArrowDown,
 } from '@mui/icons-material'
 
 export interface RichTextHandle {
@@ -148,10 +160,15 @@ const RichTextEditor = forwardRef<RichTextHandle, RichTextEditorProps>(function 
   const [imageSearchResults, setImageSearchResults] = useState<any[]>([])
   const [imageSearchLoading, setImageSearchLoading] = useState(false)
   const [imageSearchError, setImageSearchError] = useState<string | null>(null)
+  const [mobileToolbarTab, setMobileToolbarTab] = useState<number | null>(null) // null = collapsed
   const lastHtmlRef = useRef<string>('') // prevent update loops
   const onChangeRef = useRef(onChange) // stable ref for onChange callback
   const initializedRef = useRef(false) // track if editor has been initialized
   const savedSelectionRef = useRef<Range | null>(null) // save selection for image insertion
+
+  // Mobile detection
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
 
   // Keep onChange ref current without triggering re-renders
   useEffect(() => {
@@ -553,272 +570,389 @@ const RichTextEditor = forwardRef<RichTextHandle, RichTextEditorProps>(function 
     },
   }))
 
+  // Mobile toolbar content panels
+  const MobileFormatPanel = () => (
+    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, p: 1, justifyContent: 'center' }}>
+      <ToggleButtonGroup value={selectedFormats} onChange={handleFormat} size="small">
+        <ToggleButton value="bold"><FormatBold /></ToggleButton>
+        <ToggleButton value="italic"><FormatItalic /></ToggleButton>
+        <ToggleButton value="underline"><FormatUnderlined /></ToggleButton>
+        <ToggleButton value="strikethrough"><FormatStrikethrough /></ToggleButton>
+      </ToggleButtonGroup>
+      <ToggleButtonGroup value={alignment} exclusive onChange={handleAlignment} size="small">
+        <ToggleButton value="left"><FormatAlignLeft /></ToggleButton>
+        <ToggleButton value="center"><FormatAlignCenter /></ToggleButton>
+        <ToggleButton value="right"><FormatAlignRight /></ToggleButton>
+      </ToggleButtonGroup>
+      <IconButton size="small" onClick={(e) => setColorAnchorEl(e.currentTarget)} sx={{ color: textColor }}>
+        <FormatColorText />
+      </IconButton>
+      <IconButton size="small" onClick={(e) => setBgColorAnchorEl(e.currentTarget)} sx={{ bgcolor: bgColor === 'transparent' ? undefined : bgColor }}>
+        <FormatColorFill />
+      </IconButton>
+    </Box>
+  )
+
+  const MobileInsertPanel = () => (
+    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, p: 1, justifyContent: 'center' }}>
+      <IconButton onClick={insertImage} size="small"><Image /></IconButton>
+      <IconButton onClick={insertLink} size="small"><LinkIcon /></IconButton>
+      <IconButton onClick={insertTable} size="small"><TableChart /></IconButton>
+      <IconButton onClick={() => execCommand('insertUnorderedList')} size="small"><FormatListBulleted /></IconButton>
+      <IconButton onClick={() => execCommand('insertOrderedList')} size="small"><FormatListNumbered /></IconButton>
+      <IconButton onClick={() => execCommand('formatBlock', 'blockquote')} size="small"><FormatQuote /></IconButton>
+      <IconButton onClick={(e) => setShapeAnchorEl(e.currentTarget)} size="small"><Rectangle /></IconButton>
+      <Button size="small" onClick={openImageSearch} startIcon={<Search />}>Images</Button>
+    </Box>
+  )
+
+  const MobileLayoutPanel = () => (
+    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, p: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <FormControl size="small" sx={{ minWidth: 100 }}>
+        <Select value={fontFamily} onChange={(e) => handleFontFamily(e.target.value)} displayEmpty>
+          {fontFamilies.slice(0, 6).map((font) => (
+            <MenuItem key={font} value={font} style={{ fontFamily: font }}>{font}</MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+      <FormControl size="small" sx={{ minWidth: 70 }}>
+        <Select value={fontSize} onChange={(e) => handleFontSize(e.target.value)} displayEmpty>
+          {fontSizes.map((size) => (
+            <MenuItem key={size} value={size}>{size}</MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+      <IconButton onClick={() => execCommand('indent')} size="small"><FormatIndentIncrease /></IconButton>
+      <IconButton onClick={() => execCommand('outdent')} size="small"><FormatIndentDecrease /></IconButton>
+      <ToggleButtonGroup value={selectedFormats} onChange={handleFormat} size="small">
+        <ToggleButton value="superscript"><Superscript /></ToggleButton>
+        <ToggleButton value="subscript"><Subscript /></ToggleButton>
+      </ToggleButtonGroup>
+    </Box>
+  )
+
+  const MobileMorePanel = () => (
+    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, p: 1, justifyContent: 'center' }}>
+      <IconButton onClick={handlePrint} size="small"><Print /></IconButton>
+      {onPreview && <IconButton onClick={onPreview} size="small"><Visibility /></IconButton>}
+      {onShare && <IconButton onClick={(e) => setShareMenuAnchor(e.currentTarget)} size="small"><Share /></IconButton>}
+      {onExportDocx && <IconButton onClick={onExportDocx} size="small"><FileDownload /></IconButton>}
+      {onExportPdf && <IconButton onClick={onExportPdf} size="small"><PictureAsPdf /></IconButton>}
+      <Button size="small" onClick={(e) => setMedicalMenuAnchor(e.currentTarget)} startIcon={<LocalHospital />}>Sections</Button>
+      <IconButton onClick={clearFormatting} size="small"><ClearAll /></IconButton>
+    </Box>
+  )
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <Paper
-        elevation={3}
-        className="editor-toolbar no-print"
-        sx={{
-          p: 1,
-          borderRadius: 0,
-          borderBottom: '2px solid #e0e0e0',
-          backgroundColor: '#fafafa',
-          position: 'sticky',
-          top: 0,
-          zIndex: 10
-        }}
-      >
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
-          {/* File info - clickable to rename */}
-          {fileName && !isEditingName && (
-            <Tooltip title="Click to rename">
-              <Typography
-                variant="body2"
-                onClick={onRename ? handleStartRename : undefined}
-                sx={{
-                  fontWeight: 500,
-                  maxWidth: 200,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  cursor: onRename ? 'pointer' : 'default',
-                  '&:hover': onRename ? { textDecoration: 'underline' } : {}
+      {/* MOBILE TOP BAR - Compact */}
+      {isMobile && (
+        <Paper
+          elevation={2}
+          className="editor-toolbar no-print"
+          sx={{ p: 0.5, borderRadius: 0, borderBottom: '1px solid #e0e0e0', backgroundColor: '#fafafa' }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flex: 1, minWidth: 0 }}>
+              {fileName && !isEditingName && (
+                <Typography
+                  variant="body2"
+                  onClick={onRename ? handleStartRename : undefined}
+                  sx={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 13, cursor: onRename ? 'pointer' : 'default' }}
+                >
+                  {fileName.split('/').pop()}
+                </Typography>
+              )}
+              {isEditingName && (
+                <TextField
+                  size="small"
+                  value={editedName}
+                  onChange={(e) => setEditedName(e.target.value)}
+                  onBlur={handleFinishRename}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleFinishRename(); if (e.key === 'Escape') setIsEditingName(false); }}
+                  autoFocus
+                  sx={{ flex: 1 }}
+                  inputProps={{ style: { fontSize: 13, padding: '4px 8px' } }}
+                />
+              )}
+              {isUnsaved && <Chip label="•" size="small" color="warning" sx={{ height: 16, '& .MuiChip-label': { px: 0.5 } }} />}
+            </Box>
+            <Box sx={{ display: 'flex', gap: 0.5 }}>
+              <IconButton onClick={handleUndo} size="small"><Undo fontSize="small" /></IconButton>
+              <IconButton onClick={handleRedo} size="small"><Redo fontSize="small" /></IconButton>
+              <IconButton onClick={handleSave} size="small" color="primary"><Save fontSize="small" /></IconButton>
+            </Box>
+          </Box>
+        </Paper>
+      )}
+
+      {/* DESKTOP TOOLBAR - Full */}
+      {!isMobile && (
+        <Paper
+          elevation={3}
+          className="editor-toolbar no-print"
+          sx={{
+            p: 1,
+            borderRadius: 0,
+            borderBottom: '2px solid #e0e0e0',
+            backgroundColor: '#fafafa',
+            position: 'sticky',
+            top: 0,
+            zIndex: 10
+          }}
+        >
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
+            {/* File info - clickable to rename */}
+            {fileName && !isEditingName && (
+              <Tooltip title="Click to rename">
+                <Typography
+                  variant="body2"
+                  onClick={onRename ? handleStartRename : undefined}
+                  sx={{
+                    fontWeight: 500,
+                    maxWidth: 200,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    cursor: onRename ? 'pointer' : 'default',
+                    '&:hover': onRename ? { textDecoration: 'underline' } : {}
+                  }}
+                >
+                  {fileName.split('/').pop()}
+                </Typography>
+              </Tooltip>
+            )}
+            {isEditingName && (
+              <TextField
+                size="small"
+                value={editedName}
+                onChange={(e) => setEditedName(e.target.value)}
+                onBlur={handleFinishRename}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleFinishRename()
+                  if (e.key === 'Escape') setIsEditingName(false)
                 }}
+                autoFocus
+                sx={{ width: 200 }}
+              />
+            )}
+            {isUnsaved && <Chip label="Unsaved" size="small" color="warning" sx={{ height: 20 }} />}
+            {fileName && <Divider orientation="vertical" flexItem />}
+            <Tooltip title="Undo">
+              <IconButton onClick={handleUndo} size="small">
+                <Undo />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Redo">
+              <IconButton onClick={handleRedo} size="small">
+                <Redo />
+              </IconButton>
+            </Tooltip>
+            <Divider orientation="vertical" flexItem />
+            <Tooltip title="Save">
+              <IconButton onClick={handleSave} size="small" color="primary">
+                <Save />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Print">
+              <IconButton onClick={handlePrint} size="small">
+                <Print />
+              </IconButton>
+            </Tooltip>
+            {onPreview && (
+              <Tooltip title="Preview">
+                <IconButton onClick={onPreview} size="small">
+                  <Visibility />
+                </IconButton>
+              </Tooltip>
+            )}
+            {onShare && (
+              <Tooltip title="Share">
+                <IconButton onClick={(e) => setShareMenuAnchor(e.currentTarget)} size="small">
+                  <Share />
+                </IconButton>
+              </Tooltip>
+            )}
+            {onExportDocx && (
+              <Tooltip title="Export DOCX">
+                <IconButton onClick={onExportDocx} size="small">
+                  <FileDownload />
+                </IconButton>
+              </Tooltip>
+            )}
+            {onExportPdf && (
+              <Tooltip title="Export PDF">
+                <IconButton onClick={onExportPdf} size="small">
+                  <PictureAsPdf />
+                </IconButton>
+              </Tooltip>
+            )}
+            {onZoomChange && (
+              <>
+                <Divider orientation="vertical" flexItem />
+                <FormControl size="small" sx={{ minWidth: 80 }}>
+                  <Select value={zoom} onChange={(e) => onZoomChange(Number(e.target.value))} displayEmpty>
+                    {[0.75, 1, 1.25, 1.5].map((z) => (
+                      <MenuItem key={z} value={z}>{Math.round(z * 100)}%</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </>
+            )}
+            <Divider orientation="vertical" flexItem />
+            <FormControl size="small" sx={{ minWidth: 140 }}>
+              <Select value={fontFamily} onChange={(e) => handleFontFamily(e.target.value)} displayEmpty>
+                {fontFamilies.map((font) => (
+                  <MenuItem key={font} value={font} style={{ fontFamily: font }}>
+                    {font}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl size="small" sx={{ minWidth: 80 }}>
+              <Select value={fontSize} onChange={(e) => handleFontSize(e.target.value)} displayEmpty>
+                {fontSizes.map((size) => (
+                  <MenuItem key={size} value={size}>
+                    {size}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <Divider orientation="vertical" flexItem />
+            <ToggleButtonGroup value={selectedFormats} onChange={handleFormat} aria-label="text formatting" size="small">
+              <ToggleButton value="bold" aria-label="bold">
+                <FormatBold />
+              </ToggleButton>
+              <ToggleButton value="italic" aria-label="italic">
+                <FormatItalic />
+              </ToggleButton>
+              <ToggleButton value="underline" aria-label="underline">
+                <FormatUnderlined />
+              </ToggleButton>
+              <ToggleButton value="strikethrough" aria-label="strikethrough">
+                <FormatStrikethrough />
+              </ToggleButton>
+            </ToggleButtonGroup>
+            <ToggleButtonGroup value={selectedFormats} onChange={handleFormat} aria-label="super subscript" size="small">
+              <ToggleButton value="superscript" aria-label="superscript">
+                <Superscript />
+              </ToggleButton>
+              <ToggleButton value="subscript" aria-label="subscript">
+                <Subscript />
+              </ToggleButton>
+            </ToggleButtonGroup>
+            <Divider orientation="vertical" flexItem />
+            <Tooltip title="Text Color">
+              <IconButton size="small" onClick={(e) => setColorAnchorEl(e.currentTarget)} style={{ color: textColor }}>
+                <FormatColorText />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Highlight Color">
+              <IconButton
+                size="small"
+                onClick={(e) => setBgColorAnchorEl(e.currentTarget)}
+                style={{ backgroundColor: bgColor === 'transparent' ? undefined : bgColor }}
               >
-                {fileName.split('/').pop()}
-              </Typography>
-            </Tooltip>
-          )}
-          {isEditingName && (
-            <TextField
-              size="small"
-              value={editedName}
-              onChange={(e) => setEditedName(e.target.value)}
-              onBlur={handleFinishRename}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleFinishRename()
-                if (e.key === 'Escape') setIsEditingName(false)
-              }}
-              autoFocus
-              sx={{ width: 200 }}
-            />
-          )}
-          {isUnsaved && <Chip label="Unsaved" size="small" color="warning" sx={{ height: 20 }} />}
-          {fileName && <Divider orientation="vertical" flexItem />}
-          <Tooltip title="Undo">
-            <IconButton onClick={handleUndo} size="small">
-              <Undo />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Redo">
-            <IconButton onClick={handleRedo} size="small">
-              <Redo />
-            </IconButton>
-          </Tooltip>
-          <Divider orientation="vertical" flexItem />
-          <Tooltip title="Save">
-            <IconButton onClick={handleSave} size="small" color="primary">
-              <Save />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Print">
-            <IconButton onClick={handlePrint} size="small">
-              <Print />
-            </IconButton>
-          </Tooltip>
-          {onPreview && (
-            <Tooltip title="Preview">
-              <IconButton onClick={onPreview} size="small">
-                <Visibility />
+                <FormatColorFill />
               </IconButton>
             </Tooltip>
-          )}
-          {onShare && (
-            <Tooltip title="Share">
-              <IconButton onClick={(e) => setShareMenuAnchor(e.currentTarget)} size="small">
-                <Share />
+            <Divider orientation="vertical" flexItem />
+            <ToggleButtonGroup value={alignment} exclusive onChange={handleAlignment} aria-label="text alignment" size="small">
+              <ToggleButton value="left" aria-label="left aligned">
+                <FormatAlignLeft />
+              </ToggleButton>
+              <ToggleButton value="center" aria-label="centered">
+                <FormatAlignCenter />
+              </ToggleButton>
+              <ToggleButton value="right" aria-label="right aligned">
+                <FormatAlignRight />
+              </ToggleButton>
+              <ToggleButton value="justify" aria-label="justified">
+                <FormatAlignJustify />
+              </ToggleButton>
+            </ToggleButtonGroup>
+            <Divider orientation="vertical" flexItem />
+            <Tooltip title="Bullet List">
+              <IconButton onClick={() => execCommand('insertUnorderedList')} size="small">
+                <FormatListBulleted />
               </IconButton>
             </Tooltip>
-          )}
-          {onExportDocx && (
-            <Tooltip title="Export DOCX">
-              <IconButton onClick={onExportDocx} size="small">
-                <FileDownload />
+            <Tooltip title="Numbered List">
+              <IconButton onClick={() => execCommand('insertOrderedList')} size="small">
+                <FormatListNumbered />
               </IconButton>
             </Tooltip>
-          )}
-          {onExportPdf && (
-            <Tooltip title="Export PDF">
-              <IconButton onClick={onExportPdf} size="small">
-                <PictureAsPdf />
+            <Tooltip title="Decrease Indent">
+              <IconButton onClick={() => execCommand('outdent')} size="small">
+                <FormatIndentDecrease />
               </IconButton>
             </Tooltip>
-          )}
-          {onZoomChange && (
-            <>
-              <Divider orientation="vertical" flexItem />
-              <FormControl size="small" sx={{ minWidth: 80 }}>
-                <Select value={zoom} onChange={(e) => onZoomChange(Number(e.target.value))} displayEmpty>
-                  {[0.75, 1, 1.25, 1.5].map((z) => (
-                    <MenuItem key={z} value={z}>{Math.round(z * 100)}%</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </>
-          )}
-          <Divider orientation="vertical" flexItem />
-          <FormControl size="small" sx={{ minWidth: 140 }}>
-            <Select value={fontFamily} onChange={(e) => handleFontFamily(e.target.value)} displayEmpty>
-              {fontFamilies.map((font) => (
-                <MenuItem key={font} value={font} style={{ fontFamily: font }}>
-                  {font}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <FormControl size="small" sx={{ minWidth: 80 }}>
-            <Select value={fontSize} onChange={(e) => handleFontSize(e.target.value)} displayEmpty>
-              {fontSizes.map((size) => (
-                <MenuItem key={size} value={size}>
-                  {size}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <Divider orientation="vertical" flexItem />
-          <ToggleButtonGroup value={selectedFormats} onChange={handleFormat} aria-label="text formatting" size="small">
-            <ToggleButton value="bold" aria-label="bold">
-              <FormatBold />
-            </ToggleButton>
-            <ToggleButton value="italic" aria-label="italic">
-              <FormatItalic />
-            </ToggleButton>
-            <ToggleButton value="underline" aria-label="underline">
-              <FormatUnderlined />
-            </ToggleButton>
-            <ToggleButton value="strikethrough" aria-label="strikethrough">
-              <FormatStrikethrough />
-            </ToggleButton>
-          </ToggleButtonGroup>
-          <ToggleButtonGroup value={selectedFormats} onChange={handleFormat} aria-label="super subscript" size="small">
-            <ToggleButton value="superscript" aria-label="superscript">
-              <Superscript />
-            </ToggleButton>
-            <ToggleButton value="subscript" aria-label="subscript">
-              <Subscript />
-            </ToggleButton>
-          </ToggleButtonGroup>
-          <Divider orientation="vertical" flexItem />
-          <Tooltip title="Text Color">
-            <IconButton size="small" onClick={(e) => setColorAnchorEl(e.currentTarget)} style={{ color: textColor }}>
-              <FormatColorText />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Highlight Color">
-            <IconButton
-              size="small"
-              onClick={(e) => setBgColorAnchorEl(e.currentTarget)}
-              style={{ backgroundColor: bgColor === 'transparent' ? undefined : bgColor }}
-            >
-              <FormatColorFill />
-            </IconButton>
-          </Tooltip>
-          <Divider orientation="vertical" flexItem />
-          <ToggleButtonGroup value={alignment} exclusive onChange={handleAlignment} aria-label="text alignment" size="small">
-            <ToggleButton value="left" aria-label="left aligned">
-              <FormatAlignLeft />
-            </ToggleButton>
-            <ToggleButton value="center" aria-label="centered">
-              <FormatAlignCenter />
-            </ToggleButton>
-            <ToggleButton value="right" aria-label="right aligned">
-              <FormatAlignRight />
-            </ToggleButton>
-            <ToggleButton value="justify" aria-label="justified">
-              <FormatAlignJustify />
-            </ToggleButton>
-          </ToggleButtonGroup>
-          <Divider orientation="vertical" flexItem />
-          <Tooltip title="Bullet List">
-            <IconButton onClick={() => execCommand('insertUnorderedList')} size="small">
-              <FormatListBulleted />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Numbered List">
-            <IconButton onClick={() => execCommand('insertOrderedList')} size="small">
-              <FormatListNumbered />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Decrease Indent">
-            <IconButton onClick={() => execCommand('outdent')} size="small">
-              <FormatIndentDecrease />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Increase Indent">
-            <IconButton onClick={() => execCommand('indent')} size="small">
-              <FormatIndentIncrease />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Quote">
-            <IconButton onClick={() => execCommand('formatBlock', 'blockquote')} size="small">
-              <FormatQuote />
-            </IconButton>
-          </Tooltip>
-          <Divider orientation="vertical" flexItem />
-          <Tooltip title="Insert Link">
-            <IconButton onClick={insertLink} size="small">
-              <LinkIcon />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Insert Image">
-            <IconButton onClick={insertImage} size="small">
-              <Image />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Insert Table">
-            <IconButton onClick={insertTable} size="small">
-              <TableChart />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Insert Shape">
-            <IconButton onClick={(e) => setShapeAnchorEl(e.currentTarget)} size="small">
-              <Rectangle />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Insert Math Symbol">
-            <IconButton onClick={() => execCommand('insertHTML', '∑')} size="small">
-              <Functions />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Code">
-            <IconButton onClick={() => execCommand('formatBlock', 'pre')} size="small">
-              <Code />
-            </IconButton>
-          </Tooltip>
-          <Divider orientation="vertical" flexItem />
-          <Tooltip title="Sections + Elements">
-            <Button size="small" startIcon={<LocalHospital />} onClick={(e) => setMedicalMenuAnchor(e.currentTarget)} variant="outlined">
-              Sections
-            </Button>
-          </Tooltip>
-          <Tooltip title="Image Placeholder">
-            <IconButton onClick={insertImagePlaceholder} size="small">
-              <Rectangle />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Search Images">
-            <Button size="small" startIcon={<Image />} onClick={openImageSearch} variant="outlined">
-              Images
-            </Button>
-          </Tooltip>
-          <Divider orientation="vertical" flexItem />
-          <Tooltip title="Clear Formatting">
-            <IconButton onClick={clearFormatting} size="small">
-              <ClearAll />
-            </IconButton>
-          </Tooltip>
-        </Box>
-      </Paper>
+            <Tooltip title="Increase Indent">
+              <IconButton onClick={() => execCommand('indent')} size="small">
+                <FormatIndentIncrease />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Quote">
+              <IconButton onClick={() => execCommand('formatBlock', 'blockquote')} size="small">
+                <FormatQuote />
+              </IconButton>
+            </Tooltip>
+            <Divider orientation="vertical" flexItem />
+            <Tooltip title="Insert Link">
+              <IconButton onClick={insertLink} size="small">
+                <LinkIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Insert Image">
+              <IconButton onClick={insertImage} size="small">
+                <Image />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Insert Table">
+              <IconButton onClick={insertTable} size="small">
+                <TableChart />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Insert Shape">
+              <IconButton onClick={(e) => setShapeAnchorEl(e.currentTarget)} size="small">
+                <Rectangle />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Insert Math Symbol">
+              <IconButton onClick={() => execCommand('insertHTML', '∑')} size="small">
+                <Functions />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Code">
+              <IconButton onClick={() => execCommand('formatBlock', 'pre')} size="small">
+                <Code />
+              </IconButton>
+            </Tooltip>
+            <Divider orientation="vertical" flexItem />
+            <Tooltip title="Sections + Elements">
+              <Button size="small" startIcon={<LocalHospital />} onClick={(e) => setMedicalMenuAnchor(e.currentTarget)} variant="outlined">
+                Sections
+              </Button>
+            </Tooltip>
+            <Tooltip title="Image Placeholder">
+              <IconButton onClick={insertImagePlaceholder} size="small">
+                <Rectangle />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Search Images">
+              <Button size="small" startIcon={<Image />} onClick={openImageSearch} variant="outlined">
+                Images
+              </Button>
+            </Tooltip>
+            <Divider orientation="vertical" flexItem />
+            <Tooltip title="Clear Formatting">
+              <IconButton onClick={clearFormatting} size="small">
+                <ClearAll />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        </Paper>
+      )}
 
       {/* Page container - 8.5x11 document view */}
       <div className="page-wrap">
@@ -840,6 +974,54 @@ const RichTextEditor = forwardRef<RichTextHandle, RichTextEditorProps>(function 
           />
         </div>
       </div>
+
+      {/* MOBILE BOTTOM TOOLBAR */}
+      {isMobile && (
+        <Paper
+          elevation={4}
+          className="no-print"
+          sx={{
+            position: 'sticky',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            zIndex: 10,
+            borderTop: '1px solid #e0e0e0',
+            backgroundColor: '#fafafa',
+          }}
+        >
+          {/* Expandable panel content */}
+          <Collapse in={mobileToolbarTab !== null}>
+            <Box sx={{ borderBottom: '1px solid #e0e0e0', bgcolor: '#fff' }}>
+              {mobileToolbarTab === 0 && <MobileFormatPanel />}
+              {mobileToolbarTab === 1 && <MobileInsertPanel />}
+              {mobileToolbarTab === 2 && <MobileLayoutPanel />}
+              {mobileToolbarTab === 3 && <MobileMorePanel />}
+            </Box>
+          </Collapse>
+
+          {/* Tab bar */}
+          <Tabs
+            value={mobileToolbarTab ?? false}
+            onChange={(_, newValue) => setMobileToolbarTab(mobileToolbarTab === newValue ? null : newValue)}
+            variant="fullWidth"
+            sx={{
+              minHeight: 48,
+              '& .MuiTab-root': {
+                minHeight: 48,
+                textTransform: 'none',
+                fontSize: 11,
+                py: 0.5,
+              },
+            }}
+          >
+            <Tab icon={<TextFormat fontSize="small" />} label="Format" value={0} />
+            <Tab icon={<Add fontSize="small" />} label="Insert" value={1} />
+            <Tab icon={<ViewModule fontSize="small" />} label="Layout" value={2} />
+            <Tab icon={<MoreHoriz fontSize="small" />} label="More" value={3} />
+          </Tabs>
+        </Paper>
+      )}
 
       <Popover open={Boolean(colorAnchorEl)} anchorEl={colorAnchorEl} onClose={() => setColorAnchorEl(null)} anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}>
         <Box sx={{ p: 2, width: 280, display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
