@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react'
+import { getApiBase } from '../../utils/apiBase'
 import './editor.css'
 import {
   Box,
@@ -252,7 +253,7 @@ const RichTextEditor = forwardRef<RichTextHandle, RichTextEditorProps>(function 
     setImageSearchResults([])
 
     try {
-      const apiBase = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '')
+      const apiBase = getApiBase()
       const res = await fetch(`${apiBase}/images/search?q=${encodeURIComponent(query)}&per_page=20`)
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}))

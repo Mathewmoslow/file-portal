@@ -1,5 +1,6 @@
 import axios, { type AxiosInstance } from 'axios';
 import type { AuthResponse, FileListResponse, FileResponse, FileNode, FileData } from '../types';
+import { getApiBase } from '../utils/apiBase';
 
 class ApiService {
   private client: AxiosInstance;
@@ -7,8 +8,7 @@ class ApiService {
 
   constructor() {
     this.client = axios.create({
-      // Default to same-origin /api (Vercel or proxy); override with VITE_API_URL for custom hosts
-      baseURL: import.meta.env.VITE_API_URL || '/api',
+      baseURL: getApiBase(),
       timeout: 30000,
     });
 

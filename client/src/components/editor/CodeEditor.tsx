@@ -3,10 +3,11 @@ import Editor from '@monaco-editor/react';
 import { useFileStore } from '../../store/fileStore';
 import { api } from '../../services/api';
 import { Save, X, ExternalLink, Share2, Copy, Check } from 'lucide-react';
+import { getApiBase } from '../../utils/apiBase';
 import './CodeEditor.css';
 
 export const CodeEditor = () => {
-  const apiBase = (import.meta.env.VITE_API_URL || 'http://localhost:3001/api').replace(/\/$/, '');
+  const apiBase = getApiBase();
   const [shareModal, setShareModal] = useState<{ open: boolean; url?: string; loading?: boolean; error?: string; expiresIn?: string }>({ open: false });
   const [copied, setCopied] = useState(false);
   const {
@@ -133,7 +134,7 @@ export const CodeEditor = () => {
     const url =
       currentFile.encoding === 'base64'
         ? `data:${mime};base64,${currentFile.content}`
-        : `${previewBase}${currentFile.path}`;
+        : buildServeUrl(currentFile.path);
     const isImage = mime.startsWith('image/');
     const isPdf = mime === 'application/pdf';
 

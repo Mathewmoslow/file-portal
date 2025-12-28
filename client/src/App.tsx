@@ -5,6 +5,7 @@ import { CodeEditor } from './components/editor/CodeEditor';
 import { MindMapView } from './components/mindmap/MindMapView';
 import { ThreeMindMap } from './components/mindmap/ThreeMindMap';
 import { api } from './services/api';
+import { getApiBase } from './utils/apiBase';
 import { LogOut } from 'lucide-react';
 import { useFileStore } from './store/fileStore';
 import { useCompanionStore } from './processor/store/companion';
@@ -41,7 +42,7 @@ function App() {
   const uploadInputRef = useRef<HTMLInputElement | null>(null);
   const [shareState, setShareState] = useState<{ url?: string; expiresIn?: string; loading?: boolean; error?: string }>({});
   const [zoom, setZoom] = useState(1);
-  const apiBase = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
+  const apiBase = getApiBase();
 
   useEffect(() => {
     // Check if already authenticated

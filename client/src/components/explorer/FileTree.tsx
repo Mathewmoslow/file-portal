@@ -3,6 +3,7 @@ import { useFileStore } from '../../store/fileStore';
 import { api } from '../../services/api';
 import type { FileNode } from '../../types';
 import { File, Folder, Trash2, Edit3, ExternalLink } from 'lucide-react';
+import { getApiBase, getApiOrigin } from '../../utils/apiBase';
 import './FileTree.css';
 
 interface FileTreeProps {
@@ -29,6 +30,7 @@ export const FileTree = ({ onFileOpen }: FileTreeProps) => {
   const [draggingPath, setDraggingPath] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const previewBase = import.meta.env.VITE_PREVIEW_BASE_URL || 'https://files.mathewmoslow.com';
+  const apiBase = getApiBase();
 
   useEffect(() => {
     loadFileTree();
@@ -334,7 +336,9 @@ export const FileTree = ({ onFileOpen }: FileTreeProps) => {
     try {
       // Generate a short-lived token for preview
       const result = await api.generateShareLink(node.path, '1h');
-      window.open(result.shareUrl, '_blank');
+      const baseOrigin = getApiOrigin(apiBase);
+      const url = result.shareUrl.startsWith('/') ? `${baseOrigin}${result.shareUrl}` : result.shareUrl;
+      window.open(url, '_blank');
     } catch (err) {
       // Fallback to direct link if token generation fails
       const url = `${previewBase}${node.path}`;
