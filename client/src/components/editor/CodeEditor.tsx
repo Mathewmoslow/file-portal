@@ -3,7 +3,7 @@ import Editor from '@monaco-editor/react';
 import { useFileStore } from '../../store/fileStore';
 import { api } from '../../services/api';
 import { Save, X, ExternalLink, Share2, Copy, Check } from 'lucide-react';
-import { getApiBase } from '../../utils/apiBase';
+import { getApiBase, getApiOrigin } from '../../utils/apiBase';
 import './CodeEditor.css';
 
 export const CodeEditor = () => {
@@ -42,16 +42,29 @@ export const CodeEditor = () => {
     return `${serveBase}?path=${encodeURIComponent(path)}${token ? `&token=${token}` : ''}`;
   };
 
+  const buildPreviewUrl = (path: string) => {
+    const serveBase = `${apiBase}/serve`;
+    return `${serveBase}?path=${encodeURIComponent(path)}`;
+  };
+
   const handlePreview = async () => {
     if (!activeFile) return;
-    const url = buildServeUrl(activeFile);
+    const url = buildPreviewUrl(activeFile);
     window.open(url, '_blank');
   };
 
   const handleShare = async (expiresIn: string = '7d') => {
     if (!activeFile) return;
-    const url = buildServeUrl(activeFile);
-    setShareModal({ open: true, url, expiresIn });
+    setShareModal({ open: true, loading: true, expiresIn });
+    try {
+      const result = await api.generateShareLink(activeFile, expiresIn);
+      const baseOrigin = getApiOrigin(apiBase);
+      const url = result.shareUrl.startsWith('/') ? `${baseOrigin}${result.shareUrl}` : result.shareUrl;
+      setShareModal({ open: true, url, expiresIn: result.expiresIn || expiresIn });
+    } catch (err: any) {
+      const message = err?.message || 'Failed to generate share link';
+      setShareModal({ open: true, error: message, expiresIn });
+    }
   };
 
   const formatExpiration = (exp: string) => {
