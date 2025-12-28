@@ -1,25 +1,15 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { CryptoService } from '../_lib/crypto.js';
-import {
-  Document,
-  Packer,
-  Paragraph,
-  TextRun,
-  HeadingLevel,
-  AlignmentType,
-  Table,
-  TableRow,
-  TableCell,
-  WidthType,
-  ImageRun,
-  ExternalHyperlink,
-} from 'docx';
+import * as docx from 'docx';
+
+const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } = docx as any;
+type DocxTextRun = any;
 
 interface ParsedElement {
   type: 'paragraph' | 'heading' | 'list' | 'table' | 'image' | 'blockquote';
   level?: number;
   text?: string;
-  runs?: TextRun[];
+  runs?: DocxTextRun[];
   children?: ParsedElement[];
   src?: string;
   rows?: string[][];
