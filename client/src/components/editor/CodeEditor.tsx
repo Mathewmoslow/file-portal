@@ -42,15 +42,17 @@ export const CodeEditor = () => {
     return `${serveBase}?path=${encodeURIComponent(path)}${token ? `&token=${token}` : ''}`;
   };
 
-  const buildPreviewUrl = (path: string) => {
-    const serveBase = `${apiBase}/serve`;
-    return `${serveBase}?path=${encodeURIComponent(path)}`;
-  };
-
   const handlePreview = async () => {
     if (!activeFile) return;
-    const url = buildPreviewUrl(activeFile);
-    window.open(url, '_blank');
+    try {
+      const result = await api.generateShareLink(activeFile, '1h');
+      const baseOrigin = getApiOrigin(apiBase);
+      const url = result.shareUrl.startsWith('/') ? `${baseOrigin}${result.shareUrl}` : result.shareUrl;
+      window.open(url, '_blank');
+    } catch {
+      const url = buildServeUrl(activeFile);
+      window.open(url, '_blank');
+    }
   };
 
   const handleShare = async (expiresIn: string = '7d') => {
