@@ -143,62 +143,34 @@ export const ThreeMindMap = ({
     const pathDepth = currentPath.split('/').filter(Boolean).length;
     const sphereRadius = 15 - pathDepth * 2;
 
-    // Layout items in alphabetical bands around the sphere
+    // Layout items uniformly across the sphere surface
     const sphereLayout = (items: FileNode[], radius: number) => {
-      // Group items by alphabet band
-      const bandGroups: FileNode[][] = [[], [], [], [], []];
-      items.forEach(item => {
-        const { index } = getAlphaBand(item.name);
-        bandGroups[index].push(item);
+      const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+      const total = Math.max(items.length, 1);
+
+      return items.map((item, index) => {
+        const t = (index + 0.5) / total;
+        const phi = Math.acos(1 - 2 * t);
+        const theta = goldenAngle * index;
+
+        const seed = item.path.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+        const random = (offset: number) => {
+          const x = Math.sin(seed + offset) * 10000;
+          return (x - Math.floor(x) - 0.5) * 0.2;
+        };
+
+        const r = radius + random(1) * 1.2;
+        const x = r * Math.sin(phi) * Math.cos(theta) + random(2) * 0.4;
+        const y = r * Math.cos(phi) + random(3) * 0.4;
+        const z = r * Math.sin(phi) * Math.sin(theta) + random(4) * 0.4;
+
+        return {
+          ...item,
+          position: [x, y, z] as [number, number, number],
+          height: Math.max(0.6, Math.log(item.size || 2) * 0.8),
+          alphaBand: getAlphaBand(item.name).band,
+        };
       });
-
-      const result: Array<FileNode & {
-        position: [number, number, number];
-        height: number;
-        alphaBand: typeof ALPHA_BANDS[0];
-      }> = [];
-
-      // Position each band in a horizontal slice of the sphere
-      bandGroups.forEach((group, bandIndex) => {
-        if (group.length === 0) return;
-
-        // Each band gets a latitude range (phi angle)
-        // Band 0 (A-E) at top, Band 4 (U-Z) at bottom
-        const bandStart = (bandIndex / 5) * Math.PI * 0.8 + Math.PI * 0.1;
-        const bandEnd = ((bandIndex + 1) / 5) * Math.PI * 0.8 + Math.PI * 0.1;
-        const bandCenter = (bandStart + bandEnd) / 2;
-
-        group.forEach((item, idx) => {
-          // Spread items around the longitude (theta) within their band
-          const theta = (idx / group.length) * Math.PI * 2;
-
-          // Slight variation within the band's latitude
-          const phiVariation = (Math.random() - 0.5) * 0.15;
-          const phi = bandCenter + phiVariation;
-
-          // Add slight randomness for organic feel
-          const seed = item.path.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
-          const random = (offset: number) => {
-            const x = Math.sin(seed + offset) * 10000;
-            return (x - Math.floor(x) - 0.5) * 0.3;
-          };
-
-          const r = radius + random(1) * 1.5;
-
-          result.push({
-            ...item,
-            position: [
-              r * Math.sin(phi) * Math.cos(theta) + random(2) * 0.5,
-              r * Math.cos(phi) + random(3) * 0.5,
-              r * Math.sin(phi) * Math.sin(theta) + random(4) * 0.5,
-            ] as [number, number, number],
-            height: Math.max(0.6, Math.log(item.size || 2) * 0.8),
-            alphaBand: ALPHA_BANDS[bandIndex],
-          });
-        });
-      });
-
-      return result;
     };
 
     return sphereLayout(allItems, sphereRadius);
