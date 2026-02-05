@@ -9,7 +9,9 @@ class ApiService {
   constructor() {
     this.client = axios.create({
       baseURL: getApiBase(),
-      timeout: 30000,
+      timeout: 0,
+      maxContentLength: Infinity,
+      maxBodyLength: Infinity,
     });
 
     // Request interceptor

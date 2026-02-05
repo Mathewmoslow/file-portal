@@ -3,6 +3,14 @@ import { setCorsHeaders, handleOptions } from '../_lib/cors.js';
 import { authenticateRequest } from '../_lib/auth.js';
 import { writeFileBuffer } from '../_lib/sftp.js';
 
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '500mb',
+    },
+  },
+};
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res);
 
