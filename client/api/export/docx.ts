@@ -35,8 +35,8 @@ function htmlToText(html: string): string {
 }
 
 // Parse inline styles and create TextRuns
-function parseInlineContent(html: string): TextRun[] {
-  const runs: TextRun[] = [];
+function parseInlineContent(html: string): InstanceType<typeof TextRun>[] {
+  const runs: InstanceType<typeof TextRun>[] = [];
 
   // Simple regex-based parsing for common formatting
   const parts = html.split(/(<\/?(?:b|strong|i|em|u|s|strike|sup|sub|a)[^>]*>)/gi);
@@ -103,8 +103,8 @@ function parseInlineContent(html: string): TextRun[] {
 }
 
 // Parse HTML and convert to docx paragraphs
-function parseHtmlToDocx(html: string): Paragraph[] {
-  const paragraphs: Paragraph[] = [];
+function parseHtmlToDocx(html: string): InstanceType<typeof Paragraph>[] {
+  const paragraphs: InstanceType<typeof Paragraph>[] = [];
 
   // Split by block elements
   const blocks = html.split(/<\/(?:p|div|h[1-6]|li|blockquote|tr)>/gi);
