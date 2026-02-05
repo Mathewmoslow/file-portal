@@ -98,7 +98,21 @@ class ApiService {
   }
 
   async updateFile(path: string, content: string): Promise<void> {
-    await this.client.put('/files/update', { path, content });
+    const CHUNK_SIZE = 3 * 1024 * 1024; // 3MB per chunk to stay under Vercel's 4.5MB body limit
+    if (content.length <= CHUNK_SIZE) {
+      await this.client.put('/files/update', { path, content });
+      return;
+    }
+    const totalChunks = Math.ceil(content.length / CHUNK_SIZE);
+    for (let i = 0; i < totalChunks; i++) {
+      const chunk = content.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
+      await this.client.put('/files/update', {
+        path,
+        content: chunk,
+        chunkIndex: i,
+        totalChunks,
+      });
+    }
   }
 
   async deleteFile(path: string, recursive = false): Promise<void> {
@@ -112,7 +126,22 @@ class ApiService {
   }
 
   async uploadBase64(path: string, base64: string): Promise<void> {
-    await this.client.post('/files/upload', { path, contentBase64: base64 });
+    // Chunk size must be a multiple of 4 for valid base64 segments
+    const CHUNK_SIZE = Math.floor((3 * 1024 * 1024) / 4) * 4; // ~3MB aligned to base64 boundary
+    if (base64.length <= CHUNK_SIZE) {
+      await this.client.post('/files/upload', { path, contentBase64: base64 });
+      return;
+    }
+    const totalChunks = Math.ceil(base64.length / CHUNK_SIZE);
+    for (let i = 0; i < totalChunks; i++) {
+      const chunk = base64.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
+      await this.client.post('/files/upload', {
+        path,
+        contentBase64: chunk,
+        chunkIndex: i,
+        totalChunks,
+      });
+    }
   }
 
   async renamePath(from: string, to: string): Promise<void> {

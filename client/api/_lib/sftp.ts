@@ -236,6 +236,20 @@ export async function writeFileBuffer(requestedPath: string, content: Buffer) {
   });
 }
 
+export async function appendFile(requestedPath: string, content: string) {
+  return withClient(async (client) => {
+    const { remotePath } = toRemotePath(requestedPath);
+    await client.append(Buffer.from(content, 'utf-8'), remotePath);
+  });
+}
+
+export async function appendFileBuffer(requestedPath: string, content: Buffer) {
+  return withClient(async (client) => {
+    const { remotePath } = toRemotePath(requestedPath);
+    await client.append(content, remotePath);
+  });
+}
+
 export async function createDirectory(requestedPath: string) {
   return withClient(async (client) => {
     const { remotePath } = toRemotePath(requestedPath);

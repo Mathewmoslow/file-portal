@@ -102,10 +102,14 @@ export class FileController {
 
   async updateFile(req: Request, res: Response, next: NextFunction) {
     try {
-      const { path: filePath, content } = req.body
+      const { path: filePath, content, chunkIndex = 0 } = req.body
       const remote = this.resolvePath(filePath)
       await withSftp(async (sftp) => {
-        await sftp.put(Buffer.from(content), remote)
+        if (chunkIndex === 0) {
+          await sftp.put(Buffer.from(content), remote)
+        } else {
+          await sftp.append(Buffer.from(content, 'utf-8'), remote)
+        }
       })
       res.json({
         success: true,
@@ -173,13 +177,17 @@ export class FileController {
 
   async uploadBase64(req: Request, res: Response, next: NextFunction) {
     try {
-      const { path: filePath, contentBase64 } = req.body
+      const { path: filePath, contentBase64, chunkIndex = 0 } = req.body
       const remote = this.resolvePath(filePath)
       const buffer = Buffer.from(contentBase64, 'base64')
       await withSftp(async (sftp) => {
         const dir = path.posix.dirname(remote)
         await sftp.mkdir(dir, true)
-        await sftp.put(buffer, remote)
+        if (chunkIndex === 0) {
+          await sftp.put(buffer, remote)
+        } else {
+          await sftp.append(buffer, remote)
+        }
       })
       res.json({
         success: true,

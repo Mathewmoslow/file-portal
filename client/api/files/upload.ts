@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { setCorsHeaders, handleOptions } from '../_lib/cors.js';
 import { authenticateRequest } from '../_lib/auth.js';
-import { writeFileBuffer } from '../_lib/sftp.js';
+import { writeFileBuffer, appendFileBuffer } from '../_lib/sftp.js';
 
 export const config = {
   api: {
@@ -28,7 +28,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { path, contentBase64 } = req.body;
+    const { path, contentBase64, chunkIndex = 0, totalChunks = 1 } = req.body;
 
     if (!path || !contentBase64) {
       return res.status(400).json({
@@ -38,12 +38,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const buffer = Buffer.from(contentBase64, 'base64');
-    await writeFileBuffer(path, buffer);
+
+    if (chunkIndex === 0) {
+      await writeFileBuffer(path, buffer);
+    } else {
+      await appendFileBuffer(path, buffer);
+    }
+
+    const complete = chunkIndex === totalChunks - 1;
 
     return res.status(200).json({
       success: true,
-      message: 'File uploaded successfully',
+      message: complete ? 'File uploaded successfully' : `Chunk ${chunkIndex + 1}/${totalChunks} uploaded`,
       file: { path, name: path.split('/').pop() },
+      complete,
     });
   } catch (error: any) {
     if (error.message === 'INVALID_PATH') {
