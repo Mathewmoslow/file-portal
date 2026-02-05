@@ -239,8 +239,16 @@ export class FileController {
       if (ext === '.html' || ext === '.htm') {
         const html = buf.toString('utf-8')
         const baseDir = remote.substring(0, remote.lastIndexOf('/'))
-        const tokenParam = bearer ? `&token=${bearer}` : (shareToken ? `&token=${shareToken}` : '')
-        const rewrite = html.replace(/(src|href)=\"(?!https?:)([^\"#]+)\"/g, (_m, attr, val) => {
+        const requestedPath = req.query.path as string
+        const requestedDir = requestedPath.substring(0, requestedPath.lastIndexOf('/'))
+        const token = bearer || shareToken || ''
+        const tokenParam = token ? `&token=${token}` : ''
+
+        // Inject fetch/XHR helper so relative JS fetches resolve through /api/serve
+        const fetchHelper = `<script>(function(){var d="${requestedDir}",t="${token}",o=window.fetch;window.fetch=function(u,p){if(typeof u==="string"&&!u.match(/^(https?:|\\/|data:|blob:)/)){u="/api/serve?path="+encodeURIComponent(d+"/"+u)+(t?"&token="+t:"");}return o.call(this,u,p);};var X=XMLHttpRequest.prototype.open,O=X;XMLHttpRequest.prototype.open=function(m,u){if(typeof u==="string"&&!u.match(/^(https?:|\\/|data:|blob:)/)){u="/api/serve?path="+encodeURIComponent(d+"/"+u)+(t?"&token="+t:"");}return O.call(this,m,u);};})();</script>`
+
+        let rewrite = html.replace(/<head([^>]*)>/i, `<head$1>${fetchHelper}`)
+        rewrite = rewrite.replace(/(src|href)=\"(?!https?:)([^\"#]+)\"/g, (_m, attr, val) => {
           const target = val.startsWith('/') ? val : `${baseDir}/${val}`
           const encoded = encodeURIComponent(target.replace(SFTP_BASE, ''))
           return `${attr}="/api/serve?path=${encoded}${tokenParam}"`
@@ -249,7 +257,7 @@ export class FileController {
         contentType = 'text/html'
       }
       res.setHeader('Content-Type', contentType)
-      res.setHeader('Content-Length', buf.length)
+      res.setHeader('Content-Length', body.length)
       res.send(body)
     } catch (error) {
       next(error)

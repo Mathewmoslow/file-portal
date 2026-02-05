@@ -33,10 +33,22 @@ function getMimeType(filePath: string): string {
 }
 
 /**
+ * Script injected into HTML to make fetch() resolve relative URLs through /api/serve
+ */
+function getFetchHelperScript(basePath: string, token: string): string {
+  const baseDir = path.posix.dirname(basePath);
+  return `<script>(function(){var d="${baseDir}",t="${token}",o=window.fetch;window.fetch=function(u,p){if(typeof u==="string"&&!u.match(/^(https?:|\\\/|data:|blob:)/)){u="/api/serve?path="+encodeURIComponent(d+"/"+u)+(t?"&token="+t:"");}return o.call(this,u,p);};var X=XMLHttpRequest.prototype.open,O=X;XMLHttpRequest.prototype.open=function(m,u){if(typeof u==="string"&&!u.match(/^(https?:|\\\/|data:|blob:)/)){u="/api/serve?path="+encodeURIComponent(d+"/"+u)+(t?"&token="+t:"");}return O.call(this,m,u);};})();</script>`;
+}
+
+/**
  * Rewrite relative URLs in HTML to use the serve endpoint
  */
 function rewriteHtmlUrls(html: string, basePath: string, token: string): string {
   const baseDir = path.posix.dirname(basePath);
+
+  // Inject fetch helper script right after <head>
+  const fetchHelper = getFetchHelperScript(basePath, token);
+  html = html.replace(/<head([^>]*)>/i, `<head$1>${fetchHelper}`);
 
   // Rewrite src and href attributes that are relative paths
   return html.replace(
@@ -134,10 +146,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    // For HTML files (or .docx with HTML content), rewrite relative URLs if share token
-    if (shareToken && mimeType === 'text/html' && tokenBasePath) {
+    // For HTML files, rewrite relative URLs and inject fetch helper
+    if (mimeType === 'text/html') {
       const html = buffer.toString('utf-8');
-      const rewrittenHtml = rewriteHtmlUrls(html, normalized, shareToken);
+      const token = shareToken || (req.query.token as string) || '';
+      const rewrittenHtml = rewriteHtmlUrls(html, normalized, token);
 
       res.setHeader('Content-Type', mimeType);
       res.setHeader('Content-Length', Buffer.byteLength(rewrittenHtml));
